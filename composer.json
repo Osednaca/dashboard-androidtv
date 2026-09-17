@@ -16,7 +16,7 @@
         "ext-pdo_mysql": "*",
         "ext-tokenizer": "*",
         "ext-xml": "*",
-        "php": "^8.3",
+        "php": "^8.4.1",
         "inertiajs/inertia-laravel": "^3.3",
         "laravel/framework": "^13.0",
         "laravel/reverb": "^1.11",
