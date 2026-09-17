@@ -105,7 +105,7 @@ class StartQuickPlay
                     'display_mode' => $displayMode->value,
                     'duration' => $duration,
                     'restore_previous' => true,
-                    'expires_at' => $expiresAt->toIso8601String(),
+                    'expires_at' => $expiresAt->toIso8601ZuluString(),
                 ]);
 
                 $row->forceFill([

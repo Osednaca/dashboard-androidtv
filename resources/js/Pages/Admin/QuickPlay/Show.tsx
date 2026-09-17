@@ -217,8 +217,8 @@ export default function QuickPlayShow({
             {quickPlay.failed_count > 0 ? (
                 <div className="mt-4 flex items-start gap-2 rounded-card border border-danger/25 bg-danger/10 px-4 py-3 text-xs text-danger">
                     <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-                    {quickPlay.failed_count} pantalla(s) no recibieron el contenido, normalmente por estar desconectadas.
-                    El contenido no se reproduce hasta que la pantalla vuelva a estar en línea.
+                    {quickPlay.failed_count} pantalla(s) no pudieron completar la reproducción. Revisa el detalle de cada pantalla;
+                    después de corregir la causa, crea un nuevo envío de Instant Play.
                 </div>
             ) : null}
         </PageLayout>

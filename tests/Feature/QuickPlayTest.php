@@ -148,6 +148,14 @@ class QuickPlayTest extends TestCase
         $row = $quickPlay->devices()->firstOrFail();
         $token = $device->issueToken();
 
+        $command = $device->commands()->sole();
+        $this->assertSame($quickPlay->expires_at->toIso8601ZuluString(), $command->payload['expires_at']);
+        $this->withToken($token)->getJson('/api/v1/device/commands')
+            ->assertOk()
+            ->assertJsonPath('commands.0.command', 'QUICK_PLAY')
+            ->assertJsonPath('commands.0.expires_at', $command->expires_at->toIso8601ZuluString())
+            ->assertJsonPath('commands.0.payload.expires_at', $quickPlay->expires_at->toIso8601ZuluString());
+
         $this->withHeader('Authorization', "Bearer {$token}")
             ->postJson('/api/v1/device/quick-play/status', [
                 'quick_play_device_id' => $row->id,

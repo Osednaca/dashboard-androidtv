@@ -79,6 +79,8 @@ La API de activación devuelve `expires_at` en UTC con terminación `Z` (por eje
 
 Si el APK 0.1.3 muestra `Solicitud · RESPUESTA_INVALIDA`, desplegar este cambio permite descartar esa incompatibilidad de fecha sin reinstalar la app ni modificar códigos pendientes. El diagnóstico también puede corresponder a JSON o campos inválidos; hace falta comprobar el TV después del despliegue para confirmar la causa. No requiere migraciones ni volver a ejecutar seeders.
 
+Las fechas de vencimiento de los comandos y del contenido de Instant Play también se entregan con terminación `Z`. La API normaliza las fechas de Instant Play que quedaron en comandos pendientes antes del despliegue, conservando su instante y los datos almacenados. Un envío que el TV ya marcó como fallido no se ejecuta de nuevo: después de desplegar la corrección hay que crear otro Instant Play. Esta corrección del backend funciona con el APK 0.1.3 y no requiere volver a vincular el TV.
+
 ## Instant Play para negocios
 
 Disponible en `/business/quick-play`: reutiliza el envío, historial y seguimiento del administrador con el contexto del negocio. Solo permite archivos listos de su biblioteca y pantallas/ubicaciones propias. La selección «Todas las pantallas» se limita al negocio activo; cambiar de negocio también cambia el historial. Ver requiere `business.devices.view`; enviar requiere además `business.playlists.manage`. Los roles de negocio existentes ya tienen estos permisos.

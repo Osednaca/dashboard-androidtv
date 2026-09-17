@@ -11,8 +11,10 @@ use App\Domain\QuickPlay\Actions\UpdateQuickPlayDeviceStatus;
 use App\Domain\QuickPlay\Enums\QuickPlayDeviceStatus;
 use App\Domain\QuickPlay\Models\QuickPlayDevice;
 use App\Http\Controllers\Controller;
+use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class CommandController extends Controller
 {
@@ -26,8 +28,8 @@ class CommandController extends Controller
         $payload = $commands->map(fn (DeviceCommand $command) => [
             'id' => $command->id,
             'command' => $command->command->value,
-            'payload' => $command->payload,
-            'expires_at' => $command->expires_at?->toIso8601String(),
+            'payload' => $this->devicePayload($command),
+            'expires_at' => $command->expires_at?->toIso8601ZuluString(),
         ])->all();
 
         $commands->each(fn (DeviceCommand $command) => $command->forceFill([
@@ -36,6 +38,22 @@ class CommandController extends Controller
         ])->save());
 
         return response()->json(['commands' => $payload]);
+    }
+
+    private function devicePayload(DeviceCommand $command): ?array
+    {
+        $payload = $command->payload;
+
+        if ($command->command === DeviceCommandType::QuickPlay && is_string($payload['expires_at'] ?? null)) {
+            try {
+                // Also normalize commands queued before the UTC-Z compatibility fix.
+                $payload['expires_at'] = Carbon::parse($payload['expires_at'])->toIso8601ZuluString();
+            } catch (InvalidFormatException) {
+                // Let the device reject malformed data without blocking other commands.
+            }
+        }
+
+        return $payload;
     }
 
     public function result(Request $request, DeviceCommand $command): JsonResponse

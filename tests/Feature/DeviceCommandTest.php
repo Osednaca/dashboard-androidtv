@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Devices\Actions\IssueDeviceCommand;
+use App\Domain\Devices\Enums\DeviceCommandType;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Users\Enums\RoleEnum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Concerns\CreatesUsers;
 use Tests\TestCase;
 
@@ -43,6 +46,7 @@ class DeviceCommandTest extends TestCase
         $commandId = $list->json('commands.0.id');
 
         $this->assertNotNull($commandId);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $list->json('commands.0.expires_at'));
         $this->assertDatabaseHas('device_commands', ['id' => $commandId, 'status' => 'sent']);
 
         $this->withHeaders($headers)
@@ -69,6 +73,35 @@ class DeviceCommandTest extends TestCase
         $this->withHeader('Authorization', "Bearer {$token}")
             ->postJson("/api/v1/device/commands/{$command->id}/result", ['status' => 'completed'])
             ->assertNotFound();
+    }
+
+    public function test_pending_quick_play_dates_are_normalized_without_rewriting_the_command(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-17T20:05:00Z'));
+        $device = Device::factory()->create();
+        $payload = ['expires_at' => '2026-09-17T15:35:00-05:00', 'quick_play_device_id' => 123];
+        $command = app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::QuickPlay, $payload);
+
+        $this->withToken($device->issueToken())->getJson('/api/v1/device/commands')
+            ->assertOk()
+            ->assertJsonPath('commands.0.id', $command->id)
+            ->assertJsonPath('commands.0.expires_at', '2026-09-17T20:35:00Z')
+            ->assertJsonPath('commands.0.payload.expires_at', '2026-09-17T20:35:00Z')
+            ->assertJsonPath('commands.0.payload.quick_play_device_id', 123);
+
+        $this->assertSame($payload, $command->fresh()->payload);
+    }
+
+    public function test_invalid_payload_date_does_not_block_delivery_of_other_commands(): void
+    {
+        $device = Device::factory()->create();
+        app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::QuickPlay, ['expires_at' => 'invalid-date']);
+        app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::Mute);
+
+        $this->withToken($device->issueToken())->getJson('/api/v1/device/commands')
+            ->assertOk()->assertJsonCount(2, 'commands')
+            ->assertJsonPath('commands.0.payload.expires_at', 'invalid-date')
+            ->assertJsonPath('commands.1.command', 'MUTE');
     }
 
     public function test_issuing_a_command_requires_permission(): void
