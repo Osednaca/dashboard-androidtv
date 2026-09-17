@@ -23,7 +23,8 @@ class CommandController extends Controller
         /** @var Device $device */
         $device = $request->user();
 
-        $commands = $device->commands()->deliverable()->oldest()->limit(20)->get();
+        // Unsent commands first, then the least recently offered commands.
+        $commands = $device->commands()->deliverable()->orderBy('sent_at')->oldest('id')->limit(20)->get();
 
         $payload = $commands->map(fn (DeviceCommand $command) => [
             'id' => $command->id,
@@ -32,10 +33,14 @@ class CommandController extends Controller
             'expires_at' => $command->expires_at?->toIso8601ZuluString(),
         ])->all();
 
-        $commands->each(fn (DeviceCommand $command) => $command->forceFill([
-            'status' => DeviceCommandStatus::Sent,
-            'sent_at' => now(),
-        ])->save());
+        // A result may arrive while this poll is being prepared. Never turn
+        // a completed/failed command back into a sent command in that race.
+        $device->commands()->whereKey($commands->modelKeys())
+            ->whereIn('status', [DeviceCommandStatus::Pending->value, DeviceCommandStatus::Sent->value])
+            ->update([
+                'status' => DeviceCommandStatus::Sent->value,
+                'sent_at' => now(),
+            ]);
 
         return response()->json(['commands' => $payload]);
     }

@@ -81,6 +81,10 @@ Si el APK 0.1.3 muestra `Solicitud · RESPUESTA_INVALIDA`, desplegar este cambio
 
 Las fechas de vencimiento de los comandos y del contenido de Instant Play también se entregan con terminación `Z`. La API normaliza las fechas de Instant Play que quedaron en comandos pendientes antes del despliegue, conservando su instante y los datos almacenados. Un envío que el TV ya marcó como fallido no se ejecuta de nuevo: después de desplegar la corrección hay que crear otro Instant Play. Esta corrección del backend funciona con el APK 0.1.3 y no requiere volver a vincular el TV.
 
+## Entrega de comandos sin confirmación
+
+`Enviado` significa que la API ofreció el comando; no confirma que el televisor recibió el cuerpo HTTP ni que inició la reproducción. La API vuelve a ofrecer los comandos enviados sin resultado después de un minuto, conservando ID, contenido y vencimiento. Prioriza comandos nuevos y luego los ofrecidos hace más tiempo. El APK guarda los IDs procesados para que un reintento no repita la reproducción. Los comandos completados, fallidos o vencidos no se vuelven a entregar. Esta corrección funciona con el APK 0.1.3 y no requiere migraciones; un Instant Play vencido necesita un envío nuevo.
+
 ## PIN administrativo de Android TV
 
 El APK 0.1.4 permite abrir la configuración usando un PIN de seis dígitos por pantalla. Después de desplegar ejecuta `php artisan migrate --force` para añadir `devices.admin_pin_hash`. En **Dispositivos → pantalla → Resumen → PIN administrativo del TV**, un usuario con permiso `devices.manage` puede establecer o reemplazar el PIN. No existe un PIN predeterminado ni se muestra el valor guardado.

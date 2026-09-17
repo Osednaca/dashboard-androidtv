@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Devices\Actions\IssueDeviceCommand;
+use App\Domain\Devices\Enums\DeviceCommandStatus;
 use App\Domain\Devices\Enums\DeviceCommandType;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Users\Enums\RoleEnum;
@@ -112,5 +113,63 @@ class DeviceCommandTest extends TestCase
         $this->actingAs($support)
             ->post("/admin/devices/{$device->id}/commands", ['command' => 'CLEAR_CACHE'])
             ->assertForbidden();
+    }
+
+    public function test_a_lost_poll_response_is_retried_with_the_same_command_and_expiry(): void
+    {
+        $this->freezeTime();
+        $device = Device::factory()->create();
+        $command = app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::QuickPlay, [
+            'quick_play_device_id' => 123,
+            'expires_at' => now()->addMinutes(30)->toIso8601ZuluString(),
+        ]);
+        $this->withToken($device->issueToken());
+
+        $original = $this->getJson('/api/v1/device/commands')->assertOk()->json('commands.0');
+        $this->getJson('/api/v1/device/commands')->assertOk()->assertJsonCount(0, 'commands');
+
+        // The first HTTP response never reached the TV. Offer the same ID again.
+        $this->travel(60)->seconds();
+        $retry = $this->getJson('/api/v1/device/commands')->assertOk()->json('commands.0');
+        $this->assertSame($original, $retry);
+        $this->assertSame(1, $device->commands()->count());
+
+        $this->postJson("/api/v1/device/commands/{$command->id}/result", ['status' => 'completed'])->assertOk();
+        $this->travel(60)->seconds();
+        $this->getJson('/api/v1/device/commands')->assertOk()->assertJsonCount(0, 'commands');
+    }
+
+    public function test_retries_do_not_deliver_expired_terminal_or_other_device_commands(): void
+    {
+        $this->freezeTime();
+        $device = Device::factory()->create();
+        foreach ([DeviceCommandStatus::Completed, DeviceCommandStatus::Failed, DeviceCommandStatus::Expired, DeviceCommandStatus::Sent] as $status) {
+            $command = app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::QuickPlay);
+            $command->forceFill([
+                'status' => $status,
+                'sent_at' => now()->subMinutes(2),
+                'expires_at' => $status === DeviceCommandStatus::Sent ? now() : now()->addMinutes(30),
+            ])->save();
+        }
+        $other = app(IssueDeviceCommand::class)->handle(Device::factory()->create(), DeviceCommandType::QuickPlay);
+        $other->forceFill(['status' => DeviceCommandStatus::Sent, 'sent_at' => now()->subMinutes(2)])->save();
+
+        $this->withToken($device->issueToken())->getJson('/api/v1/device/commands')
+            ->assertOk()->assertJsonCount(0, 'commands');
+    }
+
+    public function test_retries_do_not_starve_new_commands_or_commands_beyond_the_first_batch(): void
+    {
+        $this->freezeTime();
+        $device = Device::factory()->create();
+        for ($i = 0; $i < 21; $i++) {
+            $command = app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::QuickPlay);
+            $command->forceFill(['status' => DeviceCommandStatus::Sent, 'sent_at' => now()->subMinutes(2)])->save();
+        }
+        $new = app(IssueDeviceCommand::class)->handle($device, DeviceCommandType::Mute);
+        $this->withToken($device->issueToken())->getJson('/api/v1/device/commands')
+            ->assertOk()->assertJsonCount(20, 'commands')->assertJsonPath('commands.0.id', $new->id);
+
+        $this->getJson('/api/v1/device/commands')->assertOk()->assertJsonCount(2, 'commands');
     }
 }
