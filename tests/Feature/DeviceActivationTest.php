@@ -6,6 +6,7 @@ use App\Domain\Devices\Actions\AssignActivation;
 use App\Domain\Devices\Models\DeviceActivation;
 use App\Domain\Locations\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class DeviceActivationTest extends TestCase
@@ -27,6 +28,28 @@ class DeviceActivationTest extends TestCase
         ]);
 
         $this->assertSame(6, strlen($response->json('activation_code')));
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $response->json('expires_at'));
+    }
+
+    public function test_existing_activation_returns_expiry_in_utc_z_format_without_changing_its_instant(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-17T19:52:02Z'));
+
+        DeviceActivation::query()->create([
+            'code' => 'ABC234',
+            'device_uuid' => '66666666-6666-4666-8666-666666666666',
+            'status' => 'pending',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->postJson('/api/v1/device/activation/request', [
+            'device_uuid' => '66666666-6666-4666-8666-666666666666',
+        ])->assertOk()
+            ->assertJsonPath('activation_code', 'ABC234')
+            ->assertJsonPath('expires_at', '2026-09-17T20:52:02Z');
+
+        $activation = DeviceActivation::query()->sole();
+        $this->assertSame('2026-09-17T20:52:02+00:00', $activation->expires_at->toIso8601String());
     }
 
     public function test_requesting_twice_returns_the_same_pending_code(): void

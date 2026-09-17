@@ -38,7 +38,8 @@ class RequestDeviceActivation
         return [
             'activation' => $activation,
             'code' => $activation->code,
-            'expires_at' => $activation->expires_at?->toIso8601String(),
+            // Older Android Instant parsers require UTC with a literal Z suffix.
+            'expires_at' => $activation->expires_at?->toIso8601ZuluString(),
             'status' => $activation->business_id ? 'awaiting_confirmation' : 'awaiting_assignment',
         ];
     }

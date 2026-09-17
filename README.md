@@ -73,6 +73,12 @@ Si ya ejecutaste el seeder anterior antes del fallo de Faker, pudo haber creado 
 
 Los datos demo solo se cargan con `APP_ENV=local` o `testing` y requieren las dependencias de desarrollo. Después de preparar producción, crea un negocio y una ubicación desde el dashboard y asigna el código que muestra tu TV.
 
+## Compatibilidad de fechas de activación en Android TV
+
+La API de activación devuelve `expires_at` en UTC con terminación `Z` (por ejemplo, `2026-09-17T20:52:02Z`). Esto conserva el instante de vencimiento y permite que lo interpreten también las implementaciones antiguas de `Instant.parse` de Android que rechazan `+00:00`. La zona horaria del TV puede continuar en Bogotá y la del servidor en UTC. Referencia: [lector de instantes de Android API 30](https://android.googlesource.com/platform/prebuilts/fullsdk/sources/android-30/+/refs/heads/androidx-core-release/java/time/format/DateTimeFormatterBuilder.java#3253).
+
+Si el APK 0.1.3 muestra `Solicitud · RESPUESTA_INVALIDA`, desplegar este cambio permite descartar esa incompatibilidad de fecha sin reinstalar la app ni modificar códigos pendientes. El diagnóstico también puede corresponder a JSON o campos inválidos; hace falta comprobar el TV después del despliegue para confirmar la causa. No requiere migraciones ni volver a ejecutar seeders.
+
 ## Instant Play para negocios
 
 Disponible en `/business/quick-play`: reutiliza el envío, historial y seguimiento del administrador con el contexto del negocio. Solo permite archivos listos de su biblioteca y pantallas/ubicaciones propias. La selección «Todas las pantallas» se limita al negocio activo; cambiar de negocio también cambia el historial. Ver requiere `business.devices.view`; enviar requiere además `business.playlists.manage`. Los roles de negocio existentes ya tienen estos permisos.
