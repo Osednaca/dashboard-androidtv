@@ -10,6 +10,17 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolePermissionSeeder::class,
+            SystemDefaultsSeeder::class,
+        ]);
+
+        if (! app()->environment(['local', 'testing'])) {
+            $this->command?->info('Datos base preparados. Crea el administrador con: php artisan signage:admin');
+
+            return;
+        }
+
+        $this->call([
+            DemoUserSeeder::class,
             DemoDataSeeder::class,
             BusinessDemoSeeder::class,
         ]);

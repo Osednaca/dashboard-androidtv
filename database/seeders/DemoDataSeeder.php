@@ -18,7 +18,6 @@ use App\Domain\Operations\Enums\AlertSeverity;
 use App\Domain\Operations\Enums\AlertType;
 use App\Domain\Operations\Models\Alert;
 use App\Domain\Operations\Models\AuditLog;
-use App\Domain\Operations\Models\SystemSetting;
 use App\Domain\Playlists\Models\Playlist;
 use App\Domain\QuickPlay\Enums\QuickPlayDeviceStatus;
 use App\Domain\QuickPlay\Enums\QuickPlayDisplayMode;
@@ -36,8 +35,12 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $layouts = $this->seedLayouts();
-        $this->seedSystemSettings();
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('Los datos demo solo se permiten en local/testing. Usa php artisan db:seed --force y php artisan signage:admin.');
+        }
+
+        $this->call(SystemDefaultsSeeder::class);
+        $layouts = Layout::query()->get();
 
         $advertisers = $this->seedAdvertisers();
         $media = $this->seedMedia($advertisers);
@@ -112,47 +115,6 @@ class DemoDataSeeder extends Seeder
             }
 
             $quickPlay->refreshProgress();
-        }
-    }
-
-    /**
-     * @return Collection<int, Layout>
-     */
-    protected function seedLayouts()
-    {
-        $definitions = [
-            ['name' => 'Lateral 70 / 30', 'orientation' => 'landscape', 'business_percentage' => 70, 'advertising_percentage' => 30, 'is_default' => true],
-            ['name' => 'Lateral 60 / 40', 'orientation' => 'landscape', 'business_percentage' => 60, 'advertising_percentage' => 40, 'is_default' => false],
-            ['name' => 'Vertical 70 / 30', 'orientation' => 'portrait', 'business_percentage' => 70, 'advertising_percentage' => 30, 'is_default' => false],
-            ['name' => 'Franja inferior 80 / 20', 'orientation' => 'landscape', 'business_percentage' => 80, 'advertising_percentage' => 20, 'is_default' => false],
-        ];
-
-        return collect($definitions)->map(fn (array $attributes) => Layout::query()->updateOrCreate(
-            ['name' => $attributes['name']],
-            [...$attributes, 'configuration' => [
-                'business_area' => 'left',
-                'advertising_area' => 'right',
-                'ticker' => $attributes['advertising_percentage'] <= 20,
-            ]],
-        ));
-    }
-
-    protected function seedSystemSettings(): void
-    {
-        $settings = [
-            ['key' => 'network.name', 'value' => 'Red Signage TV Colombia', 'group' => 'general', 'label' => 'Nombre de la red'],
-            ['key' => 'network.default_timezone', 'value' => 'America/Bogota', 'group' => 'general', 'label' => 'Zona horaria por defecto'],
-            ['key' => 'device.offline_after_minutes', 'value' => 15, 'group' => 'devices', 'label' => 'Minutos para marcar desconectada'],
-            ['key' => 'device.heartbeat_retention_days', 'value' => 14, 'group' => 'devices', 'label' => 'Retención de latidos (días)'],
-            ['key' => 'campaign.max_priority', 'value' => 10, 'group' => 'advertising', 'label' => 'Prioridad máxima'],
-            ['key' => 'notifications.email', 'value' => true, 'group' => 'notifications', 'label' => 'Notificaciones por correo'],
-        ];
-
-        foreach ($settings as $setting) {
-            SystemSetting::query()->updateOrCreate(
-                ['key' => $setting['key']],
-                ['value' => ['data' => $setting['value']], 'group' => $setting['group'], 'label' => $setting['label']],
-            );
         }
     }
 

@@ -57,6 +57,22 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
+## Inicialización de producción en EasyPanel
+
+Con `APP_ENV=production` y las variables `DB_*` configuradas, ejecuta en la consola del dashboard:
+
+```bash
+php artisan migrate --force
+php artisan db:seed --force
+php artisan signage:admin
+```
+
+El seed de producción prepara roles, permisos, layouts y ajustes básicos sin Faker, cuentas demo ni contenido ficticio. Se puede repetir; conserva usuarios, contraseñas y ajustes existentes. El comando `signage:admin` pide nombre, correo nuevo y una contraseña de al menos 12 caracteres (entrada oculta y confirmación). Crea un superadministrador activo; rechaza correos existentes sin modificarlos. No introduzcas la contraseña como argumento del comando.
+
+Si ya ejecutaste el seeder anterior antes del fallo de Faker, pudo haber creado las cuentas demo `admin@signagetv.co`, `operaciones@signagetv.co`, `campanas@signagetv.co` y `soporte@signagetv.co`. Entra con tu administrador propio, revisa Usuarios y suspende esas cuentas de demostración. Este cambio no elimina usuarios existentes ni borra la base de datos.
+
+Los datos demo solo se cargan con `APP_ENV=local` o `testing` y requieren las dependencias de desarrollo. Después de preparar producción, crea un negocio y una ubicación desde el dashboard y asigna el código que muestra tu TV.
+
 ## Instant Play para negocios
 
 Disponible en `/business/quick-play`: reutiliza el envío, historial y seguimiento del administrador con el contexto del negocio. Solo permite archivos listos de su biblioteca y pantallas/ubicaciones propias. La selección «Todas las pantallas» se limita al negocio activo; cambiar de negocio también cambia el historial. Ver requiere `business.devices.view`; enviar requiere además `business.playlists.manage`. Los roles de negocio existentes ya tienen estos permisos.

@@ -26,6 +26,10 @@ class BusinessDemoSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('Los datos demo solo se permiten en local/testing. Usa php artisan db:seed --force y php artisan signage:admin.');
+        }
+
         $layout = Layout::query()->where('is_default', true)->first()
             ?? Layout::query()->firstOrCreate(
                 ['name' => 'Lateral 70 / 30'],
