@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Device\HeartbeatController;
 use App\Http\Controllers\Api\Device\ManifestController;
 use App\Http\Controllers\Api\Device\PlaybackEventController;
 use App\Http\Controllers\Api\Device\QuickPlayController;
+use App\Http\Controllers\Api\Device\SettingsController;
 use App\Http\Controllers\Api\Device\SyncController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,7 @@ Route::post('activation/confirm', [ActivationController::class, 'confirm'])
 Route::middleware(['device.token', 'throttle:device-api'])->group(function () {
     Route::post('admin/verify-pin', [AdminPinController::class, 'verify'])
         ->name('api.device.admin.verify-pin');
+    Route::patch('admin/settings', [SettingsController::class, 'update'])->name('api.device.admin.settings');
     Route::post('heartbeat', [HeartbeatController::class, 'store'])->name('api.device.heartbeat');
     Route::get('manifest', [ManifestController::class, 'show'])->name('api.device.manifest');
     Route::get('sync', [SyncController::class, 'show'])->name('api.device.sync');

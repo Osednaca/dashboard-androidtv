@@ -91,6 +91,14 @@ El APK 0.1.4 permite abrir la configuración usando un PIN de seis dígitos por 
 
 La validación se realiza en `POST /api/v1/device/admin/verify-pin` con el token de la pantalla. El PIN se guarda como hash, se excluye de respuestas del modelo, auditorías y datos de sesión de formularios fallidos. Se rechazan PIN vacíos, incorrectos, tokens inválidos y pantallas deshabilitadas. Cinco intentos incorrectos bloquean a esa pantalla durante cinco minutos; una validación correcta limpia los fallos anteriores. El TV requiere conexión al servidor y el APK 0.1.4. No es necesario desvincularlo para actualizar.
 
+## Ajustes de pantalla desde el TV (APK 0.1.6)
+
+La app puede guardar división, proporción, orientación y audio mediante `PATCH /api/v1/device/admin/settings`, con bearer de la pantalla, `pin` y un objeto `settings` que contiene los campos modificados (`split`, `business_percentage`, `orientation`, `audio_mode`). Revalida el PIN al guardar y comparte el límite de intentos con la entrada al menú. No permite elegir otra pantalla ni modificar un diseño compartido: crea una configuración nueva cuando cambia el diseño y la asigna únicamente al dispositivo autenticado. El dashboard refleja su layout asignado; los siguientes manifiestos conservan los cambios.
+
+Devuelve un manifiesto completo para que Android lo instale de inmediato, sin inventar versiones locales. Las versiones se generan bajo bloqueo del dispositivo y crecen aunque se guarden varios cambios en un segundo. La auditoría identifica la pantalla y campos modificados, sin PIN ni token. Los errores de descarga posteriores al guardado dejan el manifiesto pendiente de sincronización, conservando el contenido local anterior.
+
+Desplegar el backend y actualizar al APK 0.1.6. Este cambio no añade migraciones; presupone que ya existe la migración del PIN de 0.1.4. No hace falta regenerar el PIN ni desvincular el dispositivo.
+
 ## Instant Play para negocios
 
 Disponible en `/business/quick-play`: reutiliza el envío, historial y seguimiento del administrador con el contexto del negocio. Solo permite archivos listos de su biblioteca y pantallas/ubicaciones propias. La selección «Todas las pantallas» se limita al negocio activo; cambiar de negocio también cambia el historial. Ver requiere `business.devices.view`; enviar requiere además `business.playlists.manage`. Los roles de negocio existentes ya tienen estos permisos.

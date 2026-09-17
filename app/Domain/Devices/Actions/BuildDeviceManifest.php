@@ -13,6 +13,7 @@ use App\Domain\Playlists\Enums\PlaylistStatus;
 use App\Domain\Playlists\Enums\PlaylistType;
 use App\Domain\Playlists\Models\Playlist;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class BuildDeviceManifest
 {
@@ -24,6 +25,11 @@ class BuildDeviceManifest
      * active until the new one is fully downloaded.
      */
     public function handle(Device $device): DeviceManifest
+    {
+        return DB::transaction(fn () => $this->build(Device::query()->lockForUpdate()->findOrFail($device->id)));
+    }
+
+    private function build(Device $device): DeviceManifest
     {
         $device->loadMissing(['business', 'location', 'currentLayout']);
 
@@ -42,7 +48,9 @@ class BuildDeviceManifest
             ->unique('id')
             ->values();
 
-        $version = (string) now()->format('YmdHis');
+        // Settings can change several times in one second. A version must
+        // remain unique and increase for the player's atomic installer.
+        $version = (string) max((int) now()->format('YmdHis'), (int) $device->manifests()->max('version') + 1);
 
         $payload = [
             'manifest_version' => $version,
