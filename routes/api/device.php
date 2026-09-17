@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Device\ActivationController;
+use App\Http\Controllers\Api\Device\AdminPinController;
 use App\Http\Controllers\Api\Device\CommandController;
 use App\Http\Controllers\Api\Device\HeartbeatController;
 use App\Http\Controllers\Api\Device\ManifestController;
@@ -26,6 +27,8 @@ Route::post('activation/confirm', [ActivationController::class, 'confirm'])
 
 // Authenticated device endpoints (bearer token issued at activation).
 Route::middleware(['device.token', 'throttle:device-api'])->group(function () {
+    Route::post('admin/verify-pin', [AdminPinController::class, 'verify'])
+        ->name('api.device.admin.verify-pin');
     Route::post('heartbeat', [HeartbeatController::class, 'store'])->name('api.device.heartbeat');
     Route::get('manifest', [ManifestController::class, 'show'])->name('api.device.manifest');
     Route::get('sync', [SyncController::class, 'show'])->name('api.device.sync');

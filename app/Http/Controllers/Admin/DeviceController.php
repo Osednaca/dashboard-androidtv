@@ -14,10 +14,12 @@ use App\Domain\Media\Models\Layout;
 use App\Domain\Operations\Actions\RecordAudit;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
+use App\Http\Requests\Admin\DeviceAdminPinRequest;
 use App\Http\Requests\Admin\DeviceCommandRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -100,6 +102,8 @@ class DeviceController extends Controller
 
         return Inertia::render('Admin/Devices/Show', [
             'device' => EntityPresenter::device($device),
+            'adminPinConfigured' => $device->admin_pin_hash !== null,
+            'canManagePin' => request()->user()->can('update', $device),
             'commands' => $commands,
             'manifests' => $manifests,
             'playback' => $playback,
@@ -113,6 +117,14 @@ class DeviceController extends Controller
                 'layouts' => Layout::query()->get()->map(fn ($layout) => ['id' => $layout->id, 'name' => $layout->name, 'ratio' => $layout->ratioLabel()])->all(),
             ],
         ]);
+    }
+
+    public function setAdminPin(DeviceAdminPinRequest $request, Device $device): RedirectResponse
+    {
+        $device->forceFill(['admin_pin_hash' => Hash::make($request->validated('pin'))])->save();
+        app(RecordAudit::class)->handle('device.admin_pin.updated', $device);
+
+        return back()->with('success', 'PIN administrativo guardado para esta pantalla.');
     }
 
     public function command(DeviceCommandRequest $request, Device $device, IssueDeviceCommand $issue): RedirectResponse

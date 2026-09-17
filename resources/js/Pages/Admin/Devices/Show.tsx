@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import {
     Clock,
     HardDrive,
@@ -14,6 +14,8 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/Components/app/ConfirmDialog';
+import { FormField } from '@/Components/app/FormField';
+import { Input } from '@/Components/ui/input';
 import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { PageHeader } from '@/Components/app/PageHeader';
@@ -66,6 +68,8 @@ export default function DeviceShow({
     playback,
     heartbeats,
     commandTypes,
+    adminPinConfigured,
+    canManagePin,
 }: {
     device: DeviceEntity;
     commands: CommandEntity[];
@@ -73,9 +77,12 @@ export default function DeviceShow({
     playback: PlaybackRow[];
     heartbeats: HeartbeatRow[];
     commandTypes: CommandType[];
+    adminPinConfigured: boolean;
+    canManagePin: boolean;
 }) {
     const [pendingCommand, setPendingCommand] = useState<CommandType | null>(null);
     const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+    const pinForm = useForm({ pin: '', pin_confirmation: '' });
 
     const sendCommand = (type: CommandType) => {
         if (type.requires_confirmation) {
@@ -201,6 +208,39 @@ export default function DeviceShow({
                             <Row label="Negocio" value={device.business?.name ?? '—'} />
                             <Row label="Ubicación" value={device.location?.name ?? '—'} />
                             <Row label="Ciudad" value={device.location?.city ?? '—'} />
+                        </CardContent>
+                    </Card>
+                    <Card className="xl:col-span-2">
+                        <CardHeader><CardTitle>PIN administrativo del TV</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-sm text-muted">
+                                {adminPinConfigured ? 'Esta pantalla ya tiene un PIN. Puedes reemplazarlo aquí.' : 'Configura un PIN para abrir los ajustes de esta pantalla.'}
+                                {' '}Usa seis dígitos. El TV necesita conexión con el servidor para validarlo.
+                            </p>
+                            {canManagePin ? (
+                                <form className="space-y-4" onSubmit={(event) => {
+                                    event.preventDefault();
+                                    pinForm.post(`/admin/devices/${device.id}/admin-pin`, {
+                                        preserveScroll: true,
+                                        onSuccess: () => toast.success('PIN administrativo guardado.'),
+                                        onFinish: () => pinForm.reset(),
+                                    });
+                                }}>
+                                    <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+                                        <FormField label="Nuevo PIN" htmlFor="device-admin-pin" error={pinForm.errors.pin}>
+                                            <Input id="device-admin-pin" type="password" inputMode="numeric" autoComplete="new-password"
+                                                pattern="[0-9]{6}" maxLength={6} required value={pinForm.data.pin}
+                                                onChange={(event) => pinForm.setData('pin', event.target.value)} />
+                                        </FormField>
+                                        <FormField label="Confirmar PIN" htmlFor="device-admin-pin-confirmation" error={pinForm.errors.pin_confirmation}>
+                                            <Input id="device-admin-pin-confirmation" type="password" inputMode="numeric" autoComplete="new-password"
+                                                pattern="[0-9]{6}" maxLength={6} required value={pinForm.data.pin_confirmation}
+                                                onChange={(event) => pinForm.setData('pin_confirmation', event.target.value)} />
+                                        </FormField>
+                                    </div>
+                                    <Button type="submit" disabled={pinForm.processing}><KeyRound className="size-4" />Guardar PIN</Button>
+                                </form>
+                            ) : <p className="text-xs text-faint">Solicita el PIN al administrador de las pantallas.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>

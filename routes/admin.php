@@ -47,6 +47,7 @@ Route::post('activations/{activation}/assign', [DeviceController::class, 'assign
 Route::post('activations/{activation}/revoke', [DeviceController::class, 'revokeActivation'])->middleware('permission:devices.manage')->name('activations.revoke');
 Route::get('devices', [DeviceController::class, 'index'])->middleware('permission:devices.view')->name('devices.index');
 Route::get('devices/{device}', [DeviceController::class, 'show'])->middleware('permission:devices.view')->name('devices.show');
+Route::post('devices/{device}/admin-pin', [DeviceController::class, 'setAdminPin'])->middleware('permission:devices.manage')->name('devices.admin-pin');
 Route::post('devices/{device}/commands', [DeviceController::class, 'command'])->middleware('permission:devices.commands')->name('devices.commands');
 Route::post('devices/{device}/sync', [DeviceController::class, 'sync'])->middleware('permission:devices.manage')->name('devices.sync');
 Route::post('devices/{device}/toggle-status', [DeviceController::class, 'toggleStatus'])->middleware('permission:devices.manage')->name('devices.toggle-status');

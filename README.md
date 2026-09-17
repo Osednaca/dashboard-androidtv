@@ -81,6 +81,12 @@ Si el APK 0.1.3 muestra `Solicitud · RESPUESTA_INVALIDA`, desplegar este cambio
 
 Las fechas de vencimiento de los comandos y del contenido de Instant Play también se entregan con terminación `Z`. La API normaliza las fechas de Instant Play que quedaron en comandos pendientes antes del despliegue, conservando su instante y los datos almacenados. Un envío que el TV ya marcó como fallido no se ejecuta de nuevo: después de desplegar la corrección hay que crear otro Instant Play. Esta corrección del backend funciona con el APK 0.1.3 y no requiere volver a vincular el TV.
 
+## PIN administrativo de Android TV
+
+El APK 0.1.4 permite abrir la configuración usando un PIN de seis dígitos por pantalla. Después de desplegar ejecuta `php artisan migrate --force` para añadir `devices.admin_pin_hash`. En **Dispositivos → pantalla → Resumen → PIN administrativo del TV**, un usuario con permiso `devices.manage` puede establecer o reemplazar el PIN. No existe un PIN predeterminado ni se muestra el valor guardado.
+
+La validación se realiza en `POST /api/v1/device/admin/verify-pin` con el token de la pantalla. El PIN se guarda como hash, se excluye de respuestas del modelo, auditorías y datos de sesión de formularios fallidos. Se rechazan PIN vacíos, incorrectos, tokens inválidos y pantallas deshabilitadas. Cinco intentos incorrectos bloquean a esa pantalla durante cinco minutos; una validación correcta limpia los fallos anteriores. El TV requiere conexión al servidor y el APK 0.1.4. No es necesario desvincularlo para actualizar.
+
 ## Instant Play para negocios
 
 Disponible en `/business/quick-play`: reutiliza el envío, historial y seguimiento del administrador con el contexto del negocio. Solo permite archivos listos de su biblioteca y pantallas/ubicaciones propias. La selección «Todas las pantallas» se limita al negocio activo; cambiar de negocio también cambia el historial. Ver requiere `business.devices.view`; enviar requiere además `business.playlists.manage`. Los roles de negocio existentes ya tienen estos permisos.

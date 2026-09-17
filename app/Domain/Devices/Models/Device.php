@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
     'app_version', 'storage_total', 'storage_free', 'current_manifest_version',
     'pending_manifest_version', 'current_layout_id', 'current_playlist_id', 'metadata',
 ])]
-#[Hidden(['device_token_hash'])]
+#[Hidden(['device_token_hash', 'admin_pin_hash'])]
 class Device extends Model
 {
     use HasFactory;
