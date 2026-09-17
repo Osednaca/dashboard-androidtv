@@ -16,6 +16,22 @@ class AuthenticationTest extends TestCase
         $this->get('/login')->assertOk();
     }
 
+    public function test_login_assets_use_https_behind_a_trusted_proxy(): void
+    {
+        $response = $this->withServerVariables([
+            'REMOTE_ADDR' => '10.11.0.9',
+        ])->withHeaders([
+            'Host' => 'signage.example.com',
+            'X-Forwarded-Host' => 'signage.example.com',
+            'X-Forwarded-Port' => '443',
+            'X-Forwarded-Proto' => 'https',
+        ])->get('/login');
+
+        $response->assertOk();
+        $response->assertSee('https://signage.example.com/build/assets/', false);
+        $response->assertDontSee('http://signage.example.com/build/assets/', false);
+    }
+
     public function test_users_can_authenticate_with_valid_credentials(): void
     {
         $user = User::factory()->create(['password' => 'password']);
