@@ -37,10 +37,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());
+
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
             $status = $e->getStatusCode();
 
-            if ($request->expectsJson() || ! in_array($status, [403, 404, 419, 429, 500, 503], true)) {
+            if ($request->is('api/*') || $request->expectsJson() || ! in_array($status, [403, 404, 419, 429, 500, 503], true)) {
                 return null;
             }
 

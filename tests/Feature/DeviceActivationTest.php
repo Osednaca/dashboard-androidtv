@@ -96,4 +96,29 @@ class DeviceActivationTest extends TestCase
             'device_uuid' => '55555555-5555-4555-8555-555555555555',
         ])->assertStatus(422);
     }
+
+    public function test_unassigned_activation_returns_json_without_an_accept_header(): void
+    {
+        DeviceActivation::query()->create([
+            'code' => 'ZZZ999',
+            'status' => 'pending',
+            'expires_at' => now()->addHour(),
+        ]);
+
+        $this->call('POST', '/api/v1/device/activation/confirm', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode([
+            'code' => 'ZZZ999',
+            'device_uuid' => '44444444-4444-4444-8444-444444444444',
+        ]))->assertUnprocessable()
+            ->assertHeader('Content-Type', 'application/json')
+            ->assertJsonValidationErrors('code');
+    }
+
+    public function test_unknown_api_routes_return_json_without_an_accept_header(): void
+    {
+        $this->get('/api/v1/device/unknown')
+            ->assertNotFound()
+            ->assertHeader('Content-Type', 'application/json');
+    }
 }
