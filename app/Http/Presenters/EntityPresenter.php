@@ -49,6 +49,10 @@ class EntityPresenter
 
     public static function user(User $user): array
     {
+        $primaryBusiness = $user->relationLoaded('businesses')
+            ? ($user->businesses->first(fn ($business) => (bool) $business->pivot->is_primary) ?? $user->businesses->first())
+            : null;
+
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -58,6 +62,8 @@ class EntityPresenter
             'initials' => $user->initials(),
             'status' => self::enum($user->status),
             'roles' => $user->roleNames(),
+            'business_id' => $primaryBusiness?->id,
+            'business_name' => $primaryBusiness?->name,
             'last_login_at' => $user->last_login_at?->toIso8601String(),
             'created_at' => $user->created_at?->toIso8601String(),
         ];

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Businesses\Models\Business;
 use App\Domain\Operations\Actions\RecordAudit;
 use App\Domain\Users\Enums\RoleEnum;
 use App\Domain\Users\Enums\UserStatus;
@@ -28,7 +29,7 @@ class UserController extends Controller
         ]);
 
         $users = User::query()
-            ->with('roles')
+            ->with(['roles', 'businesses'])
             ->when($request->filled('search'), fn ($q) => $q->where(fn ($qq) => $qq
                 ->where('name', 'like', '%'.$request->string('search').'%')
                 ->orWhere('email', 'like', '%'.$request->string('search').'%')))
@@ -45,6 +46,12 @@ class UserController extends Controller
             'options' => [
                 'statuses' => collect(UserStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->all(),
                 'roles' => Role::query()->orderBy('label')->get(['name', 'label']),
+                'businesses' => Business::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->map(fn ($business) => ['id' => $business->id, 'name' => $business->name])
+                    ->values()
+                    ->all(),
             ],
         ]);
     }
@@ -62,8 +69,13 @@ class UserController extends Controller
         ]);
 
         $user->syncRoles($data['roles']);
+        $this->syncBusinessMembership($user, $data);
 
-        app(RecordAudit::class)->handle('user.created', $user, [], ['email' => $user->email, 'roles' => $data['roles']]);
+        app(RecordAudit::class)->handle('user.created', $user, [], [
+            'email' => $user->email,
+            'roles' => $data['roles'],
+            'business_id' => $data['business_id'] ?? null,
+        ]);
 
         return back()->with('success', 'Usuario creado.');
     }
@@ -85,10 +97,36 @@ class UserController extends Controller
 
         $oldRoles = $user->roleNames();
         $user->syncRoles($data['roles']);
+        $this->syncBusinessMembership($user, $data);
 
-        app(RecordAudit::class)->handle('user.updated', $user, ['roles' => $oldRoles], ['roles' => $data['roles']]);
+        app(RecordAudit::class)->handle('user.updated', $user, ['roles' => $oldRoles], [
+            'roles' => $data['roles'],
+            'business_id' => $data['business_id'] ?? null,
+        ]);
 
         return back()->with('success', 'Usuario actualizado.');
+    }
+
+    /**
+     * Business users belong to exactly one business chosen by the administrator;
+     * staff roles keep no business membership.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function syncBusinessMembership(User $user, array $data): void
+    {
+        $isBusinessUser = in_array(RoleEnum::BusinessUser->value, $data['roles'] ?? [], true);
+        $businessId = $isBusinessUser ? ($data['business_id'] ?? null) : null;
+
+        if ($businessId) {
+            $user->businesses()->sync([
+                $businessId => ['role' => 'staff', 'is_primary' => true],
+            ]);
+
+            return;
+        }
+
+        $user->businesses()->detach();
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

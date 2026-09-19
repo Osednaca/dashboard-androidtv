@@ -16,6 +16,7 @@ import { Button } from '@/Components/ui/button';
 import { Checkbox } from '@/Components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
+import { PasswordInput } from '@/Components/ui/password-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { AdminLayout } from '@/Layouts/AdminLayout';
 import type { EnumValue, Option, Paginated } from '@/Types';
@@ -30,9 +31,13 @@ interface UserEntity {
     initials: string;
     status: EnumValue;
     roles: string[];
+    business_id: number | null;
+    business_name: string | null;
     last_login_at: string | null;
     created_at: string | null;
 }
+
+const BUSINESS_ROLE = 'business-user';
 
 const roleLabels: Record<string, string> = {
     'super-admin': 'Super administrador',
@@ -40,6 +45,7 @@ const roleLabels: Record<string, string> = {
     operator: 'Operador',
     'campaign-manager': 'Gestor de campañas',
     support: 'Soporte',
+    'business-user': 'Usuario de negocio',
 };
 
 export default function UsersIndex({
@@ -49,7 +55,11 @@ export default function UsersIndex({
 }: {
     users: Paginated<UserEntity>;
     filters: { search?: string; status?: string; role?: string };
-    options: { statuses: Option[]; roles: Array<{ name: string; label: string }> };
+    options: {
+        statuses: Option[];
+        roles: Array<{ name: string; label: string }>;
+        businesses: Array<{ id: number; name: string }>;
+    };
 }) {
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<UserEntity | null>(null);
@@ -63,7 +73,10 @@ export default function UsersIndex({
         password: '',
         password_confirmation: '',
         roles: [] as string[],
+        business_id: '',
     });
+
+    const isBusinessUser = form.data.roles.includes(BUSINESS_ROLE);
 
     const applyFilter = (patch: Record<string, string>) => {
         const next: Record<string, string> = { ...filters, ...patch };
@@ -89,6 +102,7 @@ export default function UsersIndex({
             password: '',
             password_confirmation: '',
             roles: user.roles,
+            business_id: user.business_id ? String(user.business_id) : '',
         });
         form.clearErrors();
         setEditing(user);
@@ -229,10 +243,18 @@ export default function UsersIndex({
                             </Select>
                         </FormField>
                         <FormField label={editing ? 'Nueva contraseña (opcional)' : 'Contraseña'} error={form.errors.password}>
-                            <Input type="password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} />
+                            <PasswordInput
+                                value={form.data.password}
+                                autoComplete="new-password"
+                                onChange={(e) => form.setData('password', e.target.value)}
+                            />
                         </FormField>
                         <FormField label="Confirmar contraseña" error={form.errors.password_confirmation}>
-                            <Input type="password" value={form.data.password_confirmation} onChange={(e) => form.setData('password_confirmation', e.target.value)} />
+                            <PasswordInput
+                                value={form.data.password_confirmation}
+                                autoComplete="new-password"
+                                onChange={(e) => form.setData('password_confirmation', e.target.value)}
+                            />
                         </FormField>
                         <FormField label="Roles" error={form.errors.roles} className="sm:col-span-2">
                             <div className="flex flex-wrap gap-3">
@@ -242,14 +264,18 @@ export default function UsersIndex({
                                         <label key={role.name} className="flex items-center gap-2 text-xs text-muted">
                                             <Checkbox
                                                 checked={checked}
-                                                onCheckedChange={(value) =>
-                                                    form.setData(
-                                                        'roles',
-                                                        value
-                                                            ? [...form.data.roles, role.name]
-                                                            : form.data.roles.filter((name) => name !== role.name),
-                                                    )
-                                                }
+                                                onCheckedChange={(value) => {
+                                                    if (value) {
+                                                        form.setData('roles', [...form.data.roles, role.name]);
+                                                        return;
+                                                    }
+
+                                                    form.setData({
+                                                        ...form.data,
+                                                        roles: form.data.roles.filter((name) => name !== role.name),
+                                                        business_id: role.name === BUSINESS_ROLE ? '' : form.data.business_id,
+                                                    });
+                                                }}
                                             />
                                             {role.label}
                                         </label>
@@ -257,6 +283,31 @@ export default function UsersIndex({
                                 })}
                             </div>
                         </FormField>
+
+                        {isBusinessUser ? (
+                            <FormField
+                                label="Negocio asignado"
+                                error={form.errors.business_id}
+                                hint="El usuario solo tendrá acceso a este negocio."
+                                className="sm:col-span-2"
+                            >
+                                <Select
+                                    value={form.data.business_id || undefined}
+                                    onValueChange={(value) => form.setData('business_id', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona un negocio" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {options.businesses.map((business) => (
+                                            <SelectItem key={business.id} value={String(business.id)}>
+                                                {business.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </FormField>
+                        ) : null}
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setOpen(false)}>

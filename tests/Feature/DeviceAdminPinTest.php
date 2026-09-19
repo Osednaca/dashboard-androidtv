@@ -55,8 +55,8 @@ class DeviceAdminPinTest extends TestCase
 
     public function test_device_requires_its_own_pin_and_an_authenticated_active_token(): void
     {
-        $device = Device::factory()->create();
-        $other = Device::factory()->create();
+        $device = Device::factory()->online()->create();
+        $other = Device::factory()->online()->create();
         $device->forceFill(['admin_pin_hash' => Hash::make('012345')])->save();
         $other->forceFill(['admin_pin_hash' => Hash::make('987654')])->save();
         $endpoint = '/api/v1/device/admin/verify-pin';
@@ -73,14 +73,14 @@ class DeviceAdminPinTest extends TestCase
 
     public function test_no_pin_is_accepted_until_an_admin_configures_one(): void
     {
-        $device = Device::factory()->create();
+        $device = Device::factory()->online()->create();
         $this->withToken($device->issueToken())->postJson('/api/v1/device/admin/verify-pin', ['pin' => '123456'])->assertStatus(409);
         $this->assertNull($device->fresh()->admin_pin_hash);
     }
 
     public function test_failed_attempts_are_limited_per_device_and_successes_are_not_counted(): void
     {
-        $device = Device::factory()->create();
+        $device = Device::factory()->online()->create();
         $device->forceFill(['admin_pin_hash' => Hash::make('012345')])->save();
         $this->withToken($device->issueToken());
         $endpoint = '/api/v1/device/admin/verify-pin';
