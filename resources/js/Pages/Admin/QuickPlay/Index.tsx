@@ -130,7 +130,7 @@ export default function QuickPlayIndex({
             <div className="mt-4 rounded-card border border-line bg-card p-4">
                 <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar por archivo…">
                     <Select value={filters.status ?? 'all'} onValueChange={(value) => applyFilter({ status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-44">
+                        <SelectTrigger className="w-full sm:w-44">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>

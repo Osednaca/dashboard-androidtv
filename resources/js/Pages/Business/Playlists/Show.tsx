@@ -209,7 +209,7 @@ export default function PlaylistShow({
                 </div>
 
                 <div className="xl:col-span-4">
-                    <div className="sticky top-24 space-y-4">
+                    <div className="space-y-4 xl:sticky xl:top-24">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Vista previa</CardTitle>

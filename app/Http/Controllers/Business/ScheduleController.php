@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Business;
 
 use App\Domain\Playlists\Models\Playlist;
+use App\Domain\Scheduling\Jobs\RefreshBusinessManifests;
 use App\Domain\Scheduling\Models\ContentSchedule;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
@@ -22,7 +23,7 @@ class ScheduleController extends Controller
         $business = $this->business();
 
         $schedules = $business->schedules()
-            ->with(['playlist', 'location'])
+            ->with(['playlist', 'location', 'business'])
             ->orderBy('daily_start_time')
             ->get()
             ->map(fn (ContentSchedule $schedule) => EntityPresenter::contentSchedule($schedule));
@@ -54,6 +55,8 @@ class ScheduleController extends Controller
 
         $this->business()->schedules()->create($data);
 
+        RefreshBusinessManifests::dispatch($this->businessId(), $data['location_id'] ?? null);
+
         return back()->with(
             $overlap ? 'info' : 'success',
             $overlap
@@ -71,6 +74,8 @@ class ScheduleController extends Controller
 
         $schedule->update($data);
 
+        RefreshBusinessManifests::dispatch($this->businessId(), $schedule->location_id);
+
         return back()->with(
             $overlap ? 'info' : 'success',
             $overlap
@@ -83,7 +88,10 @@ class ScheduleController extends Controller
     {
         $this->authorizeOwned($schedule);
 
+        $locationId = $schedule->location_id;
         $schedule->delete();
+
+        RefreshBusinessManifests::dispatch($this->businessId(), $locationId);
 
         return back()->with('success', 'Programación eliminada.');
     }

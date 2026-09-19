@@ -9,20 +9,26 @@ use App\Domain\Devices\Enums\ManifestStatus;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Devices\Models\DeviceManifest;
 use App\Domain\Media\Models\Layout;
-use App\Domain\Playlists\Enums\PlaylistStatus;
-use App\Domain\Playlists\Enums\PlaylistType;
 use App\Domain\Playlists\Models\Playlist;
+use App\Domain\Scheduling\Services\ResolveActivePlaylist;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class BuildDeviceManifest
 {
-    public function __construct(protected ResolveCampaignTargets $targets) {}
+    public function __construct(
+        protected ResolveCampaignTargets $targets,
+        protected ResolveActivePlaylist $activePlaylist,
+    ) {}
 
     /**
      * Compose a versioned content manifest. Assets are referenced with checksums
      * so the player only downloads what changed, and the previous manifest stays
      * active until the new one is fully downloaded.
+     *
+     * The business playlist is resolved from the schedules (time window,
+     * weekdays and location). All scheduled playlists are embedded so a player
+     * can also switch locally between schedule boundaries.
      */
     public function handle(Device $device): DeviceManifest
     {
@@ -31,18 +37,21 @@ class BuildDeviceManifest
 
     private function build(Device $device): DeviceManifest
     {
-        $device->loadMissing(['business', 'location', 'currentLayout']);
+        $device->loadMissing(['business', 'location', 'currentLayout', 'currentPlaylist.items.mediaAsset']);
 
         $layout = $device->currentLayout
             ?? Layout::query()->where('is_default', true)->first()
             ?? Layout::query()->first();
 
-        $businessPlaylist = $this->businessPlaylist($device);
+        $activePlaylist = $this->activePlaylist->forDevice($device);
+        $scheduledPlaylists = $this->activePlaylist->scheduledPlaylists($device);
+        $schedules = $this->activePlaylist->activeSchedules($device);
 
         $campaigns = $this->activeCampaigns($device);
 
         $assets = collect()
-            ->merge($businessPlaylist?->items->pluck('mediaAsset') ?? collect())
+            ->merge($activePlaylist?->items->pluck('mediaAsset') ?? collect())
+            ->merge(collect($scheduledPlaylists)->flatMap(fn (Playlist $playlist) => $playlist->items->pluck('mediaAsset')))
             ->merge($campaigns->flatMap(fn (Campaign $c) => $c->creatives->pluck('mediaAsset')))
             ->filter()
             ->unique('id')
@@ -59,7 +68,7 @@ class BuildDeviceManifest
                 'id' => $device->id,
                 'uuid' => $device->uuid,
                 'name' => $device->name,
-                'timezone' => $device->business?->timezone,
+                'timezone' => $this->activePlaylist->timezoneFor($device),
             ],
             'layout' => $layout ? [
                 'id' => $layout->id,
@@ -69,7 +78,13 @@ class BuildDeviceManifest
                 'advertising_percentage' => $layout->advertising_percentage,
                 'configuration' => $layout->configuration,
             ] : null,
-            'business_playlist' => $businessPlaylist ? $this->playlistPayload($businessPlaylist) : null,
+            // The playlist that should be playing right now (server decision).
+            'business_playlist' => $activePlaylist ? $this->playlistPayload($activePlaylist) : null,
+            // Every playlist referenced by a schedule, so the player can switch
+            // locally at each boundary without waiting for a new manifest.
+            'scheduled_playlists' => collect($scheduledPlaylists)
+                ->map(fn (Playlist $playlist) => $this->playlistPayload($playlist))
+                ->values(),
             'advertising_playlist' => [
                 'campaigns' => $campaigns->map(fn (Campaign $c) => [
                     'id' => $c->id,
@@ -86,12 +101,17 @@ class BuildDeviceManifest
                     ])->values(),
                 ])->values(),
             ],
-            'schedules' => $businessPlaylist?->schedules->map(fn ($s) => [
-                'daily_start_time' => $s->daily_start_time,
-                'daily_end_time' => $s->daily_end_time,
-                'days_of_week' => $s->days_of_week,
-                'priority' => $s->priority,
-            ])->values() ?? [],
+            'schedules' => $schedules->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'name' => $schedule->name,
+                'playlist_id' => $schedule->playlist_id,
+                'location_id' => $schedule->location_id,
+                'daily_start_time' => $schedule->daily_start_time,
+                'daily_end_time' => $schedule->daily_end_time,
+                'days_of_week' => $schedule->days_of_week,
+                'priority' => $schedule->priority,
+            ])->values(),
+            'active_playlist_id' => $activePlaylist?->id,
             'assets' => $assets->map(fn ($asset) => [
                 'id' => $asset->id,
                 'type' => $asset->type?->value,
@@ -102,6 +122,7 @@ class BuildDeviceManifest
                 'filesize' => $asset->filesize,
             ])->values(),
             'configuration' => [
+                'timezone' => $this->activePlaylist->timezoneFor($device),
                 'heartbeat_interval_seconds' => 60,
                 'sync_interval_seconds' => 300,
                 'offline_after_minutes' => config('signage.device.offline_after_minutes'),
@@ -122,19 +143,12 @@ class BuildDeviceManifest
             'generated_at' => now(),
         ]);
 
-        $device->forceFill(['pending_manifest_version' => $version])->save();
+        $device->forceFill([
+            'pending_manifest_version' => $version,
+            'current_playlist_id' => $activePlaylist?->id ?? $device->current_playlist_id,
+        ])->save();
 
         return $manifest;
-    }
-
-    protected function businessPlaylist(Device $device): ?Playlist
-    {
-        return Playlist::query()
-            ->where('business_id', $device->business_id)
-            ->where('type', PlaylistType::Business->value)
-            ->where('status', PlaylistStatus::Active->value)
-            ->with(['items.mediaAsset', 'schedules'])
-            ->first();
     }
 
     /**

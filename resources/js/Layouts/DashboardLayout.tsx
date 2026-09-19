@@ -72,7 +72,7 @@ export function DashboardLayout({
 
                 <div
                     className={cn(
-                        'flex min-h-screen flex-col transition-[padding] duration-200',
+                        'flex min-h-screen min-w-0 flex-col transition-[padding] duration-200',
                         collapsed ? 'lg:pl-[76px]' : 'lg:pl-64',
                     )}
                 >
@@ -82,7 +82,7 @@ export function DashboardLayout({
                         onOpenMobileNav: () => setMobileOpen(true),
                     })}
 
-                    <main className={cn('flex-1 px-4 py-6 lg:px-6 lg:py-8', contentClassName)}>
+                    <main className={cn('min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-8', contentClassName)}>
                         {header ? <div className="mb-6">{header}</div> : null}
                         {children}
                     </main>

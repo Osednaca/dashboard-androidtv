@@ -103,7 +103,7 @@ export default function ReportsIndex({
 
             <div className="mt-6 flex flex-wrap gap-2">
                 <Select value={filters.device_id ?? 'all'} onValueChange={(value) => applyFilter({ device_id: value === 'all' ? '' : value })}>
-                    <SelectTrigger className="w-44">
+                    <SelectTrigger className="w-full sm:w-44">
                         <SelectValue placeholder="Pantalla" />
                     </SelectTrigger>
                     <SelectContent>
@@ -116,7 +116,7 @@ export default function ReportsIndex({
                     </SelectContent>
                 </Select>
                 <Select value={filters.location_id ?? 'all'} onValueChange={(value) => applyFilter({ location_id: value === 'all' ? '' : value })}>
-                    <SelectTrigger className="w-44">
+                    <SelectTrigger className="w-full sm:w-44">
                         <SelectValue placeholder="Ubicación" />
                     </SelectTrigger>
                     <SelectContent>
@@ -129,7 +129,7 @@ export default function ReportsIndex({
                     </SelectContent>
                 </Select>
                 <Select value={filters.playlist_id ?? 'all'} onValueChange={(value) => applyFilter({ playlist_id: value === 'all' ? '' : value })}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full sm:w-48">
                         <SelectValue placeholder="Playlist" />
                     </SelectTrigger>
                     <SelectContent>

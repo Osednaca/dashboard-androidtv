@@ -133,7 +133,7 @@ export default function ScreensIndex({
             <div className="mt-4 rounded-card border border-line bg-card p-4">
                 <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar pantalla…">
                     <Select value={filters.location_id ?? 'all'} onValueChange={(value) => applyFilter({ location_id: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-44">
+                        <SelectTrigger className="w-full sm:w-44">
                             <SelectValue placeholder="Ubicación" />
                         </SelectTrigger>
                         <SelectContent>
@@ -146,7 +146,7 @@ export default function ScreensIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.status ?? 'all'} onValueChange={(value) => applyFilter({ status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>

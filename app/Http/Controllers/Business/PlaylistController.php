@@ -6,6 +6,7 @@ use App\Domain\Playlists\Enums\PlaylistStatus;
 use App\Domain\Playlists\Enums\PlaylistType;
 use App\Domain\Playlists\Models\Playlist;
 use App\Domain\Playlists\Models\PlaylistItem;
+use App\Domain\Scheduling\Jobs\RefreshBusinessManifests;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
@@ -85,6 +86,8 @@ class PlaylistController extends Controller
             'status' => $request->filled('status') ? $request->string('status')->toString() : $playlist->status,
         ]);
 
+        RefreshBusinessManifests::dispatch($this->businessId());
+
         return back()->with('success', 'Lista actualizada.');
     }
 
@@ -124,6 +127,8 @@ class PlaylistController extends Controller
         $playlist->items()->delete();
         $playlist->schedules()->delete();
         $playlist->delete();
+
+        RefreshBusinessManifests::dispatch($this->businessId());
 
         return redirect()
             ->route('business.playlists.index')

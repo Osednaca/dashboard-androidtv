@@ -270,7 +270,8 @@ export default function BusinessHome({
                         </Button>
                     </CardHeader>
                     <CardContent className="px-0">
-                        <table className="w-full text-xs">
+                        <div className="overflow-x-auto">
+                        <table className="w-full min-w-[460px] text-xs">
                             <thead>
                                 <tr className="border-y border-line text-[10px] uppercase tracking-wider text-faint">
                                     <th className="px-5 py-2 text-left font-semibold">Nombre</th>
@@ -306,6 +307,7 @@ export default function BusinessHome({
                                 )}
                             </tbody>
                         </table>
+                        </div>
                     </CardContent>
                 </Card>
 

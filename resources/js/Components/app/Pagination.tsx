@@ -6,7 +6,7 @@ export function Pagination<T>({ paginator }: { paginator: Paginated<T> }) {
     if (paginator.last_page <= 1) return null;
 
     return (
-        <div className="flex items-center justify-between gap-4 pt-4">
+        <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted">
                 Mostrando <span className="text-fg">{paginator.from}</span>–
                 <span className="text-fg">{paginator.to}</span> de{' '}

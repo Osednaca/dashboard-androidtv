@@ -453,7 +453,10 @@ class EntityPresenter
     public static function contentSchedule(ContentSchedule $schedule): array
     {
         $days = $schedule->days_of_week ?? [];
-        $now = now();
+        $timezone = $schedule->relationLoaded('business') && $schedule->business
+            ? $schedule->business->timezone
+            : config('app.timezone');
+        $now = now($timezone);
         $today = (int) $now->dayOfWeekIso;
         $time = $now->format('H:i:s');
 

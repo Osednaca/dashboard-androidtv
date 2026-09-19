@@ -180,7 +180,7 @@ export default function UsersIndex({
             <div className="mt-6 rounded-card border border-line bg-card p-4">
                 <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar por nombre o correo…">
                     <Select value={filters.role ?? 'all'} onValueChange={(value) => applyFilter({ role: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-full sm:w-48">
                             <SelectValue placeholder="Rol" />
                         </SelectTrigger>
                         <SelectContent>
@@ -193,7 +193,7 @@ export default function UsersIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.status ?? 'all'} onValueChange={(value) => applyFilter({ status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>

@@ -212,7 +212,7 @@ export default function BusinessesIndex({
                     searchPlaceholder="Buscar por nombre o contacto…"
                 >
                     <Select value={filters.status ?? 'all'} onValueChange={(value) => applyFilter({ status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>
@@ -226,7 +226,7 @@ export default function BusinessesIndex({
                     </Select>
 
                     <Select value={filters.category ?? 'all'} onValueChange={(value) => applyFilter({ category: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-44">
+                        <SelectTrigger className="w-full sm:w-44">
                             <SelectValue placeholder="Categoría" />
                         </SelectTrigger>
                         <SelectContent>
@@ -240,7 +240,7 @@ export default function BusinessesIndex({
                     </Select>
 
                     <Select value={filters.city ?? 'all'} onValueChange={(value) => applyFilter({ city: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Ciudad" />
                         </SelectTrigger>
                         <SelectContent>

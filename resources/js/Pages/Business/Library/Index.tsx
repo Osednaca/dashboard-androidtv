@@ -93,7 +93,7 @@ export default function LibraryIndex({
                     searchPlaceholder="Buscar por nombre…"
                 >
                     <Select value={filters.type ?? 'all'} onValueChange={(value) => applyFilter({ type: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Tipo" />
                         </SelectTrigger>
                         <SelectContent>

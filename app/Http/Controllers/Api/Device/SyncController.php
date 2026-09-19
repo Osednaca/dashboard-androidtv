@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\Device;
 
+use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Events\DeviceSyncCompleted;
 use App\Domain\Devices\Events\DeviceSyncFailed;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Operations\Actions\RaiseAlert;
 use App\Domain\Operations\Enums\AlertSeverity;
 use App\Domain\Operations\Enums\AlertType;
+use App\Domain\Scheduling\Services\ResolveActivePlaylist;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,11 +19,24 @@ class SyncController extends Controller
 {
     /**
      * Lightweight poll for configuration changes when the device is online.
+     * It also reconciles the active scheduled playlist, so a schedule change
+     * takes effect on the next poll even when no manifest was pushed.
      */
-    public function show(Request $request): JsonResponse
-    {
+    public function show(
+        Request $request,
+        ResolveActivePlaylist $activePlaylist,
+        BuildDeviceManifest $builder,
+    ): JsonResponse {
         /** @var Device $device */
         $device = $request->user();
+        $device->loadMissing(['business', 'location', 'currentPlaylist']);
+
+        $resolved = $activePlaylist->forDevice($device);
+
+        if ($resolved && (int) $device->current_playlist_id !== (int) $resolved->id) {
+            $builder->handle($device);
+            $device->refresh();
+        }
 
         return response()->json([
             'server_time' => now()->toIso8601String(),

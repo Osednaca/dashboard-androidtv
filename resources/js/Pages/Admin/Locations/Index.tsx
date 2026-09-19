@@ -155,7 +155,7 @@ export default function LocationsIndex({
             <div className="mt-6 rounded-card border border-line bg-card p-4">
                 <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar por nombre, ciudad o dirección…">
                     <Select value={filters.city ?? 'all'} onValueChange={(value) => applyFilter({ city: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Ciudad" />
                         </SelectTrigger>
                         <SelectContent>
@@ -168,7 +168,7 @@ export default function LocationsIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.business_id ?? 'all'} onValueChange={(value) => applyFilter({ business_id: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-full sm:w-48">
                             <SelectValue placeholder="Negocio" />
                         </SelectTrigger>
                         <SelectContent>

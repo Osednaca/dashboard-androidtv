@@ -60,10 +60,24 @@
 
     html {
         color-scheme: dark;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
     }
 
     body {
         background-color: var(--color-canvas);
+        /* Prevent accidental horizontal scroll on phones without breaking sticky. */
+        overflow-x: clip;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Larger, comfortable tap targets on touch devices. */
+    @media (pointer: coarse) {
+        button,
+        [role='button'],
+        a {
+            touch-action: manipulation;
+        }
     }
 
     ::selection {

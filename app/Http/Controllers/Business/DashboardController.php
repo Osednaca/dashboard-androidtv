@@ -35,7 +35,7 @@ class DashboardController extends Controller
             ->get();
 
         $schedules = $business->schedules()
-            ->with(['playlist', 'location'])
+            ->with(['playlist', 'location', 'business'])
             ->orderBy('daily_start_time')
             ->get();
 

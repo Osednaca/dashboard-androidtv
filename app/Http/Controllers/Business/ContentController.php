@@ -32,7 +32,7 @@ class ContentController extends Controller
         $recentMedia = $this->businessMediaQuery()->latest()->limit(8)->get();
 
         $schedules = $business->schedules()
-            ->with(['playlist', 'location'])
+            ->with(['playlist', 'location', 'business'])
             ->orderBy('daily_start_time')
             ->get();
 

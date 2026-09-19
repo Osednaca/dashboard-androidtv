@@ -318,7 +318,8 @@ export default function BusinessSettings({
                             </span>
                         </CardHeader>
                         <CardContent className="px-0">
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto">
+                            <table className="w-full min-w-[520px] text-sm">
                                 <thead>
                                     <tr className="border-y border-line text-[11px] uppercase tracking-wider text-faint">
                                         <th className="px-5 py-2.5 text-left font-semibold">Nombre</th>
@@ -341,6 +342,7 @@ export default function BusinessSettings({
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

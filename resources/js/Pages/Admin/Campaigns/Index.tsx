@@ -132,7 +132,7 @@ export default function CampaignsIndex({
             <div className="mt-6 rounded-card border border-line bg-card p-4">
                 <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar campaña…">
                     <Select value={filters.status ?? 'all'} onValueChange={(value) => applyFilter({ status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>
@@ -145,7 +145,7 @@ export default function CampaignsIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.advertiser_id ?? 'all'} onValueChange={(value) => applyFilter({ advertiser_id: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-full sm:w-48">
                             <SelectValue placeholder="Anunciante" />
                         </SelectTrigger>
                         <SelectContent>
@@ -158,7 +158,7 @@ export default function CampaignsIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.city ?? 'all'} onValueChange={(value) => applyFilter({ city: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Ciudad" />
                         </SelectTrigger>
                         <SelectContent>
@@ -171,7 +171,7 @@ export default function CampaignsIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.category ?? 'all'} onValueChange={(value) => applyFilter({ category: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-44">
+                        <SelectTrigger className="w-full sm:w-44">
                             <SelectValue placeholder="Categoría" />
                         </SelectTrigger>
                         <SelectContent>

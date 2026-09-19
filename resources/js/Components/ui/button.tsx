@@ -16,11 +16,12 @@ const buttonVariants = cva(
                 success: 'bg-positive/15 text-positive border border-positive/30 hover:bg-positive/25',
             },
             size: {
-                sm: 'h-8 px-3 text-xs',
+                // Slightly taller on phones for comfortable touch targets.
+                sm: 'h-9 px-3 text-xs sm:h-8',
                 md: 'h-10 px-4',
                 lg: 'h-11 px-6 text-base',
-                icon: 'h-9 w-9',
-                'icon-sm': 'h-8 w-8',
+                icon: 'h-10 w-10 sm:h-9 sm:w-9',
+                'icon-sm': 'h-9 w-9 sm:h-8 sm:w-8',
             },
         },
         defaultVariants: {

@@ -49,97 +49,101 @@ export function PlaylistItemRow({
             onDragOver={onDragOver}
             onDrop={() => onDrop?.(item.id)}
             className={cn(
-                'flex items-center gap-3 rounded-control border bg-surface px-3 py-2 transition-colors',
+                'flex flex-col gap-3 rounded-control border bg-surface p-3 transition-colors sm:flex-row sm:items-center',
                 dragging ? 'border-accent/60 opacity-60' : 'border-line',
             )}
         >
-            {canManage ? (
-                <span
-                    draggable
-                    onDragStart={() => onDragStart?.(item.id)}
-                    className="cursor-grab text-faint active:cursor-grabbing"
-                    aria-label="Reordenar"
-                >
-                    <GripVertical className="size-4" />
-                </span>
-            ) : null}
+            <div className="flex min-w-0 items-center gap-3">
+                {canManage ? (
+                    <span
+                        draggable
+                        onDragStart={() => onDragStart?.(item.id)}
+                        className="cursor-grab text-faint active:cursor-grabbing"
+                        aria-label="Reordenar"
+                    >
+                        <GripVertical className="size-4" />
+                    </span>
+                ) : null}
 
-            <span className="metric w-5 shrink-0 text-center text-xs text-faint">{index + 1}</span>
-            <MediaThumbnail media={item.media} className="w-20 shrink-0" />
+                <span className="metric w-5 shrink-0 text-center text-xs text-faint">{index + 1}</span>
+                <MediaThumbnail media={item.media} className="w-16 shrink-0 sm:w-20" />
 
-            <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-fg">{item.media?.filename ?? 'Contenido eliminado'}</p>
-                <p className="text-[11px] text-faint">
-                    {item.media?.type?.label ?? '—'}
-                    {item.media?.resolution ? ` · ${item.media.resolution}` : ''}
-                </p>
+                <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-fg">{item.media?.filename ?? 'Contenido eliminado'}</p>
+                    <p className="text-[11px] text-faint">
+                        {item.media?.type?.label ?? '—'}
+                        {item.media?.resolution ? ` · ${item.media.resolution}` : ''}
+                    </p>
+                </div>
             </div>
 
-            {canManage ? (
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                        <Input
-                            type="number"
-                            min={3}
-                            max={600}
-                            value={duration}
-                            onChange={(event) => setDuration(Number(event.target.value))}
-                            onBlur={commitDuration}
-                            className="h-8 w-16 px-2 text-xs"
-                            aria-label="Duración en segundos"
-                        />
-                        <span className="text-[11px] text-faint">seg</span>
-                    </div>
-                    <Select
-                        value={item.transition}
-                        onValueChange={(value) => onUpdate(item.id, { duration, transition: value })}
-                    >
-                        <SelectTrigger className="h-8 w-32 text-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {transitions.map((transition) => (
-                                <SelectItem key={transition.value} value={transition.value}>
-                                    {transition.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            ) : (
-                <span className="metric text-xs text-muted">{item.duration} seg</span>
-            )}
+            <div className="flex items-center justify-between gap-2 sm:ml-auto sm:justify-end">
+                {canManage ? (
+                    <>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                                <Input
+                                    type="number"
+                                    min={3}
+                                    max={600}
+                                    value={duration}
+                                    onChange={(event) => setDuration(Number(event.target.value))}
+                                    onBlur={commitDuration}
+                                    className="h-9 w-16 px-2 text-xs sm:h-8"
+                                    aria-label="Duración en segundos"
+                                />
+                                <span className="text-[11px] text-faint">seg</span>
+                            </div>
+                            <Select
+                                value={item.transition}
+                                onValueChange={(value) => onUpdate(item.id, { duration, transition: value })}
+                            >
+                                <SelectTrigger className="h-9 w-32 text-xs sm:h-8">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {transitions.map((transition) => (
+                                        <SelectItem key={transition.value} value={transition.value}>
+                                            {transition.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-            {canManage ? (
-                <div className="flex items-center gap-0.5">
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        disabled={index === 0}
-                        onClick={() => onMove(item.id, -1)}
-                        aria-label="Subir"
-                    >
-                        <ArrowUp className="size-3.5" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        disabled={index === total - 1}
-                        onClick={() => onMove(item.id, 1)}
-                        aria-label="Bajar"
-                    >
-                        <ArrowDown className="size-3.5" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => onRemove(item.id)}
-                        aria-label="Quitar"
-                    >
-                        <Trash2 className="size-3.5 text-danger" />
-                    </Button>
-                </div>
-            ) : null}
+                        <div className="flex items-center gap-0.5">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                disabled={index === 0}
+                                onClick={() => onMove(item.id, -1)}
+                                aria-label="Subir"
+                            >
+                                <ArrowUp className="size-3.5" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                disabled={index === total - 1}
+                                onClick={() => onMove(item.id, 1)}
+                                aria-label="Bajar"
+                            >
+                                <ArrowDown className="size-3.5" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => onRemove(item.id)}
+                                aria-label="Quitar"
+                            >
+                                <Trash2 className="size-3.5 text-danger" />
+                            </Button>
+                        </div>
+                    </>
+                ) : (
+                    <span className="metric text-xs text-muted">{item.duration} seg</span>
+                )}
+            </div>
         </div>
     );
 }

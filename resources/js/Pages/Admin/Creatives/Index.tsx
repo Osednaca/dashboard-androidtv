@@ -127,7 +127,7 @@ export default function CreativesIndex({
             <div className="mt-6 rounded-card border border-line bg-card p-4">
                 <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar por nombre de archivo…">
                     <Select value={filters.type ?? 'all'} onValueChange={(value) => applyFilter({ type: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-36">
+                        <SelectTrigger className="w-full sm:w-36">
                             <SelectValue placeholder="Tipo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -140,7 +140,7 @@ export default function CreativesIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.processing_status ?? 'all'} onValueChange={(value) => applyFilter({ processing_status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Proceso" />
                         </SelectTrigger>
                         <SelectContent>

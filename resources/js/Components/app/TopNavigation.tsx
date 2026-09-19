@@ -41,7 +41,7 @@ export function TopNavigation({
     const unread = notifications?.unread ?? 0;
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-canvas/85 px-4 backdrop-blur-md lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-line bg-canvas/85 px-3 backdrop-blur-md sm:gap-3 sm:px-4 lg:px-6">
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobileNav} aria-label="Abrir menú">
                 <Menu className="size-5" />
             </Button>
@@ -59,7 +59,7 @@ export function TopNavigation({
             <button
                 type="button"
                 onClick={() => window.dispatchEvent(new Event('signage:open-search'))}
-                className="group flex h-10 flex-1 items-center gap-3 rounded-control border border-line bg-surface px-3 text-left text-sm text-muted transition-colors hover:border-line-strong lg:max-w-xl"
+                className="group flex h-10 min-w-0 flex-1 items-center gap-2 rounded-control border border-line bg-surface px-3 text-left text-sm text-muted transition-colors hover:border-line-strong sm:gap-3 lg:max-w-xl"
             >
                 <Search className="size-4 text-faint" />
                 <span className="flex-1 truncate">Buscar negocios, pantallas, campañas o anunciantes…</span>

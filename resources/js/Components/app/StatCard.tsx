@@ -29,8 +29,8 @@ export function StatCard({
 
     return (
         <Card className="relative overflow-hidden">
-            <div className="flex items-start gap-4 p-4">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-control border border-line bg-surface text-accent">
+            <div className="flex items-start gap-3 p-4 sm:gap-4">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-control border border-line bg-surface text-accent sm:size-11">
                     <Icon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">

@@ -93,7 +93,7 @@ export default function AlertsIndex({
             <div className="mt-6 rounded-card border border-line bg-card p-4">
                 <FilterBar>
                     <Select value={filters.status ?? 'all'} onValueChange={(value) => applyFilter({ status: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Estado" />
                         </SelectTrigger>
                         <SelectContent>
@@ -106,7 +106,7 @@ export default function AlertsIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.severity ?? 'all'} onValueChange={(value) => applyFilter({ severity: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                             <SelectValue placeholder="Severidad" />
                         </SelectTrigger>
                         <SelectContent>
@@ -119,7 +119,7 @@ export default function AlertsIndex({
                         </SelectContent>
                     </Select>
                     <Select value={filters.type ?? 'all'} onValueChange={(value) => applyFilter({ type: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-56">
+                        <SelectTrigger className="w-full sm:w-56">
                             <SelectValue placeholder="Tipo" />
                         </SelectTrigger>
                         <SelectContent>
