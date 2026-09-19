@@ -85,6 +85,8 @@ Route::get('quick-play', [QuickPlayController::class, 'index'])->middleware('per
 Route::get('quick-play/create', [QuickPlayController::class, 'create'])->middleware('permission:quick_play.send')->name('quick-play.create');
 Route::post('quick-play', [QuickPlayController::class, 'store'])->middleware('permission:quick_play.send')->name('quick-play.store');
 Route::get('quick-play/{quickPlay}', [QuickPlayController::class, 'show'])->middleware('permission:quick_play.view')->name('quick-play.show');
+Route::post('quick-play/{quickPlay}/retry', [QuickPlayController::class, 'retry'])->middleware('permission:quick_play.send')->name('quick-play.retry');
+Route::delete('quick-play/{quickPlay}', [QuickPlayController::class, 'destroy'])->middleware('permission:quick_play.send')->name('quick-play.destroy');
 
 // Analytics
 Route::get('analytics', [AnalyticsController::class, 'index'])->middleware('permission:analytics.view')->name('analytics.index');

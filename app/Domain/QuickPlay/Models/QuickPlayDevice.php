@@ -35,7 +35,7 @@ class QuickPlayDevice extends Model
      */
     public function quickPlay(): BelongsTo
     {
-        return $this->belongsTo(QuickPlay::class);
+        return $this->belongsTo(QuickPlay::class)->withTrashed();
     }
 
     /**

@@ -40,6 +40,16 @@ class SettingsController extends Controller
             }
             $ratio = (int) ($settings['business_percentage'] ?? $current?->business_percentage ?? 70);
             $orientation = $settings['orientation'] ?? $current?->orientation?->value ?? 'landscape';
+            if (isset($settings['rotation'])) {
+                $configuration['rotation'] = (int) $settings['rotation'];
+                $orientation = $configuration['rotation'] % 180 === 0 ? 'landscape' : 'portrait';
+            } elseif (isset($settings['orientation'])) {
+                // Older players still send only orientation. Reset the explicit rotation too.
+                $configuration['rotation'] = $orientation === 'portrait' ? 90 : 0;
+            }
+            if (isset($settings['transition'])) {
+                $configuration['transition'] = $settings['transition'];
+            }
             // Layouts can be shared by many TVs. Never mutate another TV's layout.
             $layout = $current;
             if (! $current || $current->business_percentage !== $ratio || $current->orientation?->value !== $orientation || $current->configuration !== $configuration) {

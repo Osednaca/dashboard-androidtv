@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'user_id', 'business_id', 'media_asset_id', 'display_mode', 'scope', 'duration', 'status',
@@ -20,6 +21,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class QuickPlay extends Model
 {
+    use SoftDeletes;
+
+    public function canRetry(): bool
+    {
+        return ! $this->trashed() && $this->isTerminal() && $this->failed_count > 0 && empty($this->metadata['retry_id']);
+    }
+
     protected function casts(): array
     {
         return [

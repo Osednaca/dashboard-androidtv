@@ -5,10 +5,11 @@ namespace App\Domain\QuickPlay\Events;
 use App\Domain\QuickPlay\Models\QuickPlay;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class QuickPlayStatusUpdated implements ShouldBroadcast
+class QuickPlayStatusUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable, SerializesModels;
 

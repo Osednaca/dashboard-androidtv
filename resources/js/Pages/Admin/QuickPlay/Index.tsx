@@ -8,6 +8,7 @@ import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { Pagination } from '@/Components/app/Pagination';
 import { StatusBadge } from '@/Components/app/StatusBadge';
+import { QuickPlayActions } from '@/Components/app/QuickPlayActions';
 import { Button } from '@/Components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { usePermissions } from '@/Hooks/usePermissions';
@@ -90,7 +91,8 @@ export default function QuickPlayIndex({
             header: '',
             className: 'text-right',
             cell: (row) => (
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                    <QuickPlayActions quickPlay={row} portal={portal} />
                     <ActionMenu items={[{ label: 'Ver entrega', icon: Eye, onSelect: () => router.visit(`${basePath}/${row.id}`) }]} />
                 </div>
             ),

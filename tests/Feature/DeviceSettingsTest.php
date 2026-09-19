@@ -24,7 +24,7 @@ class DeviceSettingsTest extends TestCase
             'advertising_percentage' => 30, 'is_default' => true,
             'configuration' => ['business_area' => 'right', 'advertising_area' => 'left', 'audio_mode' => 'none'],
         ]);
-        $device = Device::factory()->create(['current_layout_id' => $layout->id]);
+        $device = Device::factory()->online()->create(['current_layout_id' => $layout->id]);
         $device->forceFill(['admin_pin_hash' => Hash::make('012345')])->save();
 
         return $device;
@@ -94,12 +94,46 @@ class DeviceSettingsTest extends TestCase
     {
         $device = $this->device();
         $this->withToken($device->issueToken());
-        foreach ([[], ['business_percentage' => 0], ['business_percentage' => 100], ['orientation' => 'invalid'], ['split' => null], ['audio_mode' => 'both'], ['current_layout_id' => 1]] as $settings) {
+        foreach ([[], ['business_percentage' => 0], ['business_percentage' => 100], ['orientation' => 'invalid'], ['split' => null], ['audio_mode' => 'both'], ['rotation' => 45], ['rotation' => 360], ['transition' => 'invalid'], ['current_layout_id' => 1]] as $settings) {
             $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => $settings])->assertUnprocessable();
         }
         $device->forceFill(['admin_pin_hash' => null])->save();
         $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['orientation' => 'portrait']])->assertStatus(409);
         $this->assertDatabaseCount('layouts', 1);
+    }
+
+    public function test_rotation_cycles_and_transition_survive_subsequent_settings_and_manifest_builds(): void
+    {
+        $device = $this->device();
+        $this->withToken($device->issueToken());
+        foreach ([90, 180, 270, 0] as $rotation) {
+            $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['rotation' => $rotation, 'transition' => 'soft_zoom']])
+                ->assertOk()->assertJsonPath('manifest.payload.layout.configuration.rotation', $rotation)
+                ->assertJsonPath('manifest.payload.layout.orientation', $rotation % 180 === 0 ? 'landscape' : 'portrait');
+        }
+        $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['split' => 'top_bottom']])->assertOk()
+            ->assertJsonPath('manifest.payload.layout.configuration.rotation', 0)
+            ->assertJsonPath('manifest.payload.layout.configuration.transition', 'soft_zoom');
+        $rebuilt = app(BuildDeviceManifest::class)->handle($device->fresh());
+        $this->assertSame(0, $rebuilt->payload['layout']['configuration']['rotation']);
+        $this->assertSame('soft_zoom', $rebuilt->payload['layout']['configuration']['transition']);
+        $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['orientation' => 'portrait', 'transition' => 'playlist']])->assertOk()
+            ->assertJsonPath('manifest.payload.layout.configuration.rotation', 90)
+            ->assertJsonPath('manifest.payload.layout.configuration.transition', 'playlist');
+    }
+
+    public function test_late_acknowledgement_preserves_new_changes_and_cannot_roll_back_the_tv(): void
+    {
+        $device = $this->device();
+        $this->withToken($device->issueToken());
+        $first = app(BuildDeviceManifest::class)->handle($device);
+        $second = app(BuildDeviceManifest::class)->handle($device->fresh());
+        $this->postJson('/api/v1/device/sync/acknowledge', ['version' => $first->version, 'success' => true])->assertOk();
+        $this->getJson('/api/v1/device/sync')->assertOk()->assertJsonPath('pending_manifest_version', $second->version);
+        $this->postJson('/api/v1/device/sync/acknowledge', ['version' => $second->version, 'success' => true])->assertOk();
+        $this->postJson('/api/v1/device/sync/acknowledge', ['version' => $first->version, 'success' => true])->assertOk();
+        $this->getJson('/api/v1/device/sync')->assertOk()->assertJsonPath('current_manifest_version', $second->version)->assertJsonPath('pending_manifest_version', null);
+        $this->getJson('/api/v1/device/manifest')->assertOk()->assertJsonPath('manifest.version', $second->version);
     }
 
     public function test_failed_pins_share_the_attempt_limit_with_login_and_survive_database_transactions(): void

@@ -8,6 +8,8 @@ use App\Domain\Devices\Models\Device;
 use App\Domain\Locations\Models\Location;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Operations\Actions\RecordAudit;
+use App\Domain\QuickPlay\Actions\DeleteQuickPlay;
+use App\Domain\QuickPlay\Actions\RetryQuickPlay;
 use App\Domain\QuickPlay\Actions\StartQuickPlay;
 use App\Domain\QuickPlay\Enums\QuickPlayDisplayMode;
 use App\Domain\QuickPlay\Enums\QuickPlayScope;
@@ -132,6 +134,26 @@ class QuickPlayController extends Controller
                 ->values()
                 ->all(),
         ]);
+    }
+
+    public function retry(Request $request, QuickPlay $quickPlay, RetryQuickPlay $retry, RecordAudit $audit): RedirectResponse
+    {
+        $source = $this->quickPlaysQuery()->findOrFail($quickPlay->id);
+        $attempt = $retry->handle($source, $request->user());
+        $audit->handle($this->portal.'.quick_play.retried', $source, [], ['retry_id' => $attempt->id, 'targets' => $attempt->targets_count]);
+
+        return redirect()->route($this->portal === 'business' ? 'business.quick-play.show' : 'quick-play.show', $attempt)
+            ->with('success', 'Reintento preparado para '.$attempt->targets_count.' pantalla(s). Revisa el estado de entrega.');
+    }
+
+    public function destroy(QuickPlay $quickPlay, DeleteQuickPlay $delete, RecordAudit $audit): RedirectResponse
+    {
+        $source = $this->quickPlaysQuery()->findOrFail($quickPlay->id);
+        $delete->handle($source);
+        $audit->handle($this->portal.'.quick_play.deleted', $source);
+
+        return redirect()->route($this->portal === 'business' ? 'business.quick-play.index' : 'quick-play.index')
+            ->with('success', 'Instant Play eliminado del historial. Se cancelaron las entregas pendientes.');
     }
 
     /**

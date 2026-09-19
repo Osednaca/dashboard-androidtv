@@ -74,7 +74,13 @@ class SyncController extends Controller
         }
 
         DB::transaction(function () use ($device, $manifest, $data) {
-            $device->manifests()
+            $locked = Device::query()->lockForUpdate()->findOrFail($device->id);
+            // An older download can finish after a newer settings change is published.
+            // A late ACK must never roll back the active version or erase that update.
+            if ($locked->current_manifest_version !== null && (int) $data['version'] < (int) $locked->current_manifest_version) {
+                return;
+            }
+            $locked->manifests()
                 ->where('status', 'current')
                 ->update(['status' => 'superseded']);
 
@@ -83,9 +89,9 @@ class SyncController extends Controller
                 'activated_at' => now(),
             ])->save();
 
-            $device->forceFill([
+            $locked->forceFill([
                 'current_manifest_version' => $data['version'],
-                'pending_manifest_version' => null,
+                'pending_manifest_version' => $locked->pending_manifest_version === $data['version'] ? null : $locked->pending_manifest_version,
                 'last_sync_at' => now(),
             ])->save();
         });

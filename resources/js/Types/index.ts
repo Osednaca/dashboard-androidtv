@@ -296,6 +296,9 @@ export interface QuickPlayEntity {
     scope: EnumValue;
     duration: number | null;
     duration_label: string;
+    can_retry: boolean;
+    retry_id: number | null;
+    retry_of_id: number | null;
     status: EnumValue;
     targets_count: number;
     delivered_count: number;

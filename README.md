@@ -93,6 +93,10 @@ La validación se realiza en `POST /api/v1/device/admin/verify-pin` con el token
 
 ## Ajustes de pantalla desde el TV (APK 0.1.6)
 
+El APK 0.1.7 añade `settings.rotation` (0, 90, 180, 270) y `settings.transition` (`playlist`, `none`, `fade`, `crossfade`, `slide_left`, `slide_right`, `soft_zoom`). Se conservan en la configuración del layout exclusivo de la pantalla y se incluyen en los siguientes manifiestos. `playlist` respeta la transición de cada elemento. Los clientes anteriores que envían `orientation` siguen funcionando y restablecen el giro a 0°/90°. Las confirmaciones tardías de sincronización conservan versiones nuevas pendientes y no revierten una versión más reciente ya confirmada.
+
+Para habilitarlo, desplegar el backend actualizado e instalar el APK 0.1.7; este cambio no incorpora migraciones ni cambios del frontend. Los originales de las imágenes del negocio permanecen en el panel, y el TV guarda una copia persistente para reproducir sin Internet después de sincronizar. Los archivos publicitarios mantienen su almacenamiento en la nube.
+
 La app puede guardar división, proporción, orientación y audio mediante `PATCH /api/v1/device/admin/settings`, con bearer de la pantalla, `pin` y un objeto `settings` que contiene los campos modificados (`split`, `business_percentage`, `orientation`, `audio_mode`). Revalida el PIN al guardar y comparte el límite de intentos con la entrada al menú. No permite elegir otra pantalla ni modificar un diseño compartido: crea una configuración nueva cuando cambia el diseño y la asigna únicamente al dispositivo autenticado. El dashboard refleja su layout asignado; los siguientes manifiestos conservan los cambios.
 
 Devuelve un manifiesto completo para que Android lo instale de inmediato, sin inventar versiones locales. Las versiones se generan bajo bloqueo del dispositivo y crecen aunque se guarden varios cambios en un segundo. La auditoría identifica la pantalla y campos modificados, sin PIN ni token. Los errores de descarga posteriores al guardado dejan el manifiesto pendiente de sincronización, conservando el contenido local anterior.
@@ -100,6 +104,12 @@ Devuelve un manifiesto completo para que Android lo instale de inmediato, sin in
 Desplegar el backend y actualizar al APK 0.1.6. Este cambio no añade migraciones; presupone que ya existe la migración del PIN de 0.1.4. No hace falta regenerar el PIN ni desvincular el dispositivo.
 
 ## Instant Play para negocios
+
+El historial y el detalle de Instant Play incluyen **Reintentar fallidas** y **Eliminar**, tanto en administración como en negocios. El reintento está disponible cuando el envío terminó con fallos y crea un envío nuevo únicamente para esas pantallas, conservando archivo, duración y modo. Usa comandos nuevos y un vencimiento renovado, por lo que Android no lo descarta como un comando repetido. Los clics duplicados sobre el mismo envío abren el mismo reintento; si vuelve a fallar, se puede reintentar desde el nuevo envío.
+
+Eliminar pide confirmación, oculta el envío del historial y cancela la entrega/reentrega de sus comandos pendientes. No borra el archivo de la biblioteca ni detiene un contenido que el TV ya recibió. Se conserva el registro interno para aceptar las confirmaciones tardías del dispositivo sin errores ni reapariciones en el historial. Estas acciones requieren `quick_play.send` en administración o `business.devices.view` y `business.playlists.manage` en negocios; siempre respetan el negocio activo.
+
+Esta mejora requiere desplegar el código, ejecutar `php artisan migrate --force` (migración `2026_09_19_180000_add_soft_deletes_to_quick_plays_table`) y `npm run build`. No necesita actualizar el APK.
 
 Disponible en `/business/quick-play`: reutiliza el envío, historial y seguimiento del administrador con el contexto del negocio. Solo permite archivos listos de su biblioteca y pantallas/ubicaciones propias. La selección «Todas las pantallas» se limita al negocio activo; cambiar de negocio también cambia el historial. Ver requiere `business.devices.view`; enviar requiere además `business.playlists.manage`. Los roles de negocio existentes ya tienen estos permisos.
 

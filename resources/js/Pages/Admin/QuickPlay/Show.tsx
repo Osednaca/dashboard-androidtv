@@ -15,6 +15,7 @@ import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { QuickPlayPreview } from '@/Components/app/QuickPlayPreview';
+import { QuickPlayActions } from '@/Components/app/QuickPlayActions';
 import { StatusBadge } from '@/Components/app/StatusBadge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -107,6 +108,7 @@ export default function QuickPlayShow({
                 actions={
                     <>
                         <StatusBadge value={quickPlay.status} />
+                        <QuickPlayActions quickPlay={quickPlay} portal={portal} />
                         {!isTerminal ? (
                             <Button
                                 variant="secondary"
@@ -126,6 +128,10 @@ export default function QuickPlayShow({
                     </>
                 }
             />
+
+            {quickPlay.retry_of_id ? (
+                <p className="mt-4 text-sm text-muted">Reintento del envío #{quickPlay.retry_of_id}. Incluye solo las pantallas que fallaron.</p>
+            ) : null}
 
             <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Card>
@@ -218,7 +224,9 @@ export default function QuickPlayShow({
                 <div className="mt-4 flex items-start gap-2 rounded-card border border-danger/25 bg-danger/10 px-4 py-3 text-xs text-danger">
                     <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
                     {quickPlay.failed_count} pantalla(s) no pudieron completar la reproducción. Revisa el detalle de cada pantalla;
-                    después de corregir la causa, crea un nuevo envío de Instant Play.
+                    {quickPlay.can_retry ? ' después de corregir la causa, pulsa «Reintentar fallidas». Solo se reenviará a esas pantallas.'
+                        : quickPlay.retry_id ? ' ya se creó un reintento; puedes consultar su entrega con «Ver reintento».'
+                        : ' podrás reintentar cuando finalicen las entregas en curso.'}
                 </div>
             ) : null}
         </PageLayout>

@@ -38,6 +38,10 @@ Route::middleware('permission:business.devices.view')->group(function () {
     Route::post('quick-play', [QuickPlayController::class, 'send'])
         ->middleware('permission:business.playlists.manage')->name('business.quick-play.store');
     Route::get('quick-play/{quickPlay}', [QuickPlayController::class, 'show'])->name('business.quick-play.show');
+    Route::post('quick-play/{quickPlay}/retry', [QuickPlayController::class, 'retry'])
+        ->middleware('permission:business.playlists.manage')->name('business.quick-play.retry');
+    Route::delete('quick-play/{quickPlay}', [QuickPlayController::class, 'destroy'])
+        ->middleware('permission:business.playlists.manage')->name('business.quick-play.destroy');
 });
 
 // Content overview
