@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Device;
 
+use App\Domain\Campaigns\Actions\RefreshCampaignDates;
 use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Events\DeviceSyncCompleted;
 use App\Domain\Devices\Events\DeviceSyncFailed;
@@ -29,6 +30,12 @@ class SyncController extends Controller
     ): JsonResponse {
         /** @var Device $device */
         $device = $request->user();
+        app(RefreshCampaignDates::class)->handle();
+        $device->refresh();
+        if ($device->manifest_dirty) {
+            app(BuildDeviceManifest::class)->handle($device);
+            $device->refresh();
+        }
         $device->loadMissing(['business', 'location', 'currentPlaylist']);
 
         $resolved = $activePlaylist->forDevice($device);
@@ -72,8 +79,16 @@ class SyncController extends Controller
         }
 
         if (! $data['success']) {
-            $manifest->forceFill(['status' => 'failed'])->save();
-            $device->forceFill(['pending_manifest_version' => null])->save();
+            DB::transaction(function () use ($device, $manifest) {
+                $locked = Device::query()->lockForUpdate()->findOrFail($device->id);
+                if ($locked->current_manifest_version === $manifest->version) {
+                    return;
+                }
+                $manifest->forceFill(['status' => 'failed'])->save();
+                if ($locked->pending_manifest_version === $manifest->version) {
+                    $locked->forceFill(['manifest_dirty' => true])->save();
+                }
+            });
 
             DeviceSyncFailed::dispatch($device, $data['reason'] ?? 'Error de descarga');
 

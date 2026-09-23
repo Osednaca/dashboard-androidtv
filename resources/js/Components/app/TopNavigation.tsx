@@ -69,7 +69,7 @@ export function TopNavigation({
                 </span>
             </button>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
                 <Badge tone={app.env === 'production' ? 'positive' : 'info'} className="hidden md:inline-flex">
                     <Circle className="size-1.5 fill-current" />
                     {app.env === 'production' ? 'Producción' : `Entorno ${app.env}`}
@@ -86,7 +86,7 @@ export function TopNavigation({
                             ) : null}
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-2rem)]">
                         <DropdownMenuLabel>Alertas recientes</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {notifications?.recent?.length ? (
@@ -132,7 +132,7 @@ export function TopNavigation({
                                 {user?.avatar_url ? <AvatarImage src={user.avatar_url} alt={user.name} /> : null}
                                 <AvatarFallback>{initialsFrom(user?.name ?? 'AD')}</AvatarFallback>
                             </Avatar>
-                            <span className="hidden min-w-0 sm:block">
+                            <span className="hidden min-w-0 max-w-40 sm:block">
                                 <span className="block truncate text-xs font-medium text-fg">{user?.name}</span>
                                 <span className="block truncate text-[10px] text-faint">
                                     {user?.job_title ?? user?.roles?.[0] ?? 'Administrador'}

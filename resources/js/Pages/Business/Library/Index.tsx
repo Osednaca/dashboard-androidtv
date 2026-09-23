@@ -39,6 +39,7 @@ export default function LibraryIndex({
 }) {
     const { can } = usePermissions();
     const [uploadOpen, setUploadOpen] = useState(false);
+    const [uploadBusy, setUploadBusy] = useState(false);
     const [previewMedia, setPreviewMedia] = useState<MediaEntity | null>(null);
     const [renaming, setRenaming] = useState<MediaEntity | null>(null);
     const [deleting, setDeleting] = useState<MediaEntity | null>(null);
@@ -69,7 +70,7 @@ export default function LibraryIndex({
                 description={`${formatNumber(counts.total)} archivos · ${counts.images} imágenes · ${counts.videos} videos · ${formatBytes(totalSize)}`}
                 actions={
                     can('business.media.upload') ? (
-                        <Button variant="primary" size="sm" onClick={() => setUploadOpen((value) => !value)}>
+                        <Button variant="primary" size="sm" disabled={uploadBusy} onClick={() => setUploadOpen((value) => !value)}>
                             <Plus className="size-4" />
                             Subir contenido
                         </Button>
@@ -81,7 +82,7 @@ export default function LibraryIndex({
                 <div className="mt-6">
                     <UploadDropzone
                         action="/business/library"
-                        onUploaded={() => setUploadOpen(false)}
+                        onBusyChange={setUploadBusy}
                     />
                 </div>
             ) : null}

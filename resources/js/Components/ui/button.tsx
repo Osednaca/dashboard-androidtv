@@ -17,11 +17,11 @@ const buttonVariants = cva(
             },
             size: {
                 // Slightly taller on phones for comfortable touch targets.
-                sm: 'h-9 px-3 text-xs sm:h-8',
-                md: 'h-10 px-4',
+                sm: 'min-h-11 px-3 text-xs sm:min-h-0 sm:h-8',
+                md: 'min-h-11 px-4 sm:min-h-0 sm:h-10',
                 lg: 'h-11 px-6 text-base',
-                icon: 'h-10 w-10 sm:h-9 sm:w-9',
-                'icon-sm': 'h-9 w-9 sm:h-8 sm:w-8',
+                icon: 'h-11 w-11 sm:h-9 sm:w-9',
+                'icon-sm': 'h-11 w-11 sm:h-8 sm:w-8',
             },
         },
         defaultVariants: {

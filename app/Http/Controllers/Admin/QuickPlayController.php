@@ -30,12 +30,12 @@ class QuickPlayController extends Controller
 
     protected function quickPlaysQuery(): Builder
     {
-        return QuickPlay::query();
+        return QuickPlay::query()->whereNull('business_id')->whereHas('mediaAsset', fn ($query) => $query->advertising());
     }
 
     protected function mediaQuery(): Builder
     {
-        return MediaAsset::query();
+        return MediaAsset::query()->advertising();
     }
 
     protected function devicesQuery(): Builder
@@ -89,7 +89,7 @@ class QuickPlayController extends Controller
 
     public function store(StartQuickPlayRequest $request, StartQuickPlay $start, RecordAudit $audit): RedirectResponse
     {
-        $media = MediaAsset::query()->findOrFail($request->integer('media_asset_id'));
+        $media = MediaAsset::query()->advertising()->findOrFail($request->integer('media_asset_id'));
 
         $quickPlay = $start->handle(
             $request->user(),

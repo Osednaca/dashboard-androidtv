@@ -24,6 +24,9 @@ class StoreMediaAsset
         $directory = 'media/'.$type->value.'/'.now()->format('Y/m');
 
         $path = $file->storeAs($directory, $filename, $disk);
+        if (! $path) {
+            throw new \RuntimeException('No se pudo guardar el archivo.');
+        }
 
         $checksum = null;
         try {

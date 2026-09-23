@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Advertisers\Models\Advertiser;
 use App\Domain\Businesses\Enums\BusinessCategory;
 use App\Domain\Businesses\Models\Business;
+use App\Domain\Campaigns\Actions\InvalidateCampaignDevices;
 use App\Domain\Campaigns\Actions\PublishCampaign;
 use App\Domain\Campaigns\Actions\ResolveCampaignTargets;
 use App\Domain\Campaigns\Enums\CampaignStatus;
@@ -183,6 +184,8 @@ class CampaignController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($campaign, $data) {
+            $invalidator = app(InvalidateCampaignDevices::class);
+            $previousDevices = $invalidator->targets($campaign);
             $campaign->update([
                 'advertiser_id' => $data['advertiser_id'],
                 'name' => $data['name'],
@@ -200,6 +203,10 @@ class CampaignController extends Controller
 
             $this->syncCreatives($campaign, $data['creatives']);
             $this->syncTargets($campaign, $data['targets']);
+            if (in_array($campaign->status, [CampaignStatus::Active, CampaignStatus::Scheduled], true)) {
+                $campaign->update(['status' => app(ResolveCampaignTargets::class)->recommendedStatus($campaign)]);
+            }
+            $invalidator->handle(array_merge($previousDevices, $invalidator->targets($campaign)));
         });
 
         app(RecordAudit::class)->handle('campaign.updated', $campaign);
@@ -261,7 +268,12 @@ class CampaignController extends Controller
     {
         $this->authorize('delete', $campaign);
 
-        $campaign->delete();
+        DB::transaction(function () use ($campaign) {
+            $invalidator = app(InvalidateCampaignDevices::class);
+            $ids = $invalidator->targets($campaign);
+            $campaign->delete();
+            $invalidator->handle($ids);
+        });
 
         return redirect()->route('campaigns.index')->with('success', 'Campaña eliminada.');
     }
@@ -349,7 +361,7 @@ class CampaignController extends Controller
                 'name' => $a->name,
                 'status' => EntityPresenter::enum($a->status),
             ]),
-            'creatives' => MediaAsset::query()->ready()->latest()->get()->map(fn ($asset) => EntityPresenter::mediaAsset($asset)),
+            'creatives' => MediaAsset::query()->advertising()->ready()->latest()->get()->map(fn ($asset) => EntityPresenter::mediaAsset($asset)),
             'cities' => Location::query()->distinct()->orderBy('city')->pluck('city'),
             'categories' => BusinessCategory::options(),
             'businesses' => Business::query()->orderBy('name')->get(['id', 'name']),

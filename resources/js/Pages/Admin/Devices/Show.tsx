@@ -217,10 +217,10 @@ export default function DeviceShow({
                         </CardContent>
                     </Card>
                     <Card className="xl:col-span-2">
-                        <CardHeader><CardTitle>PIN para apps anteriores a 0.1.9</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>PIN de acceso a Configuración</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-sm text-muted">
-                                La app 0.1.9 y posteriores acceden y guardan ajustes sin PIN. Este control solo se conserva para versiones antiguas.{' '}
+                                La app 0.1.12 vuelve a solicitar este PIN para entrar a Configuración. Las versiones 0.1.9 a 0.1.11 no lo solicitan.{' '}
                                 {adminPinConfigured ? 'Esta pantalla ya tiene un PIN. Puedes reemplazarlo aquí.' : 'Configura un PIN para abrir los ajustes de esta pantalla.'}
                                 {' '}Usa seis dígitos. El TV necesita conexión con el servidor para validarlo.
                             </p>

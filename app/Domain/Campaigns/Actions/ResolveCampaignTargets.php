@@ -101,6 +101,10 @@ class ResolveCampaignTargets
 
     public function recommendedStatus(Campaign $campaign): CampaignStatus
     {
+        if ($campaign->ends_at && $campaign->ends_at->isBefore(today())) {
+            return CampaignStatus::Completed;
+        }
+
         if ($campaign->starts_at && $campaign->starts_at->isAfter(today())) {
             return CampaignStatus::Scheduled;
         }

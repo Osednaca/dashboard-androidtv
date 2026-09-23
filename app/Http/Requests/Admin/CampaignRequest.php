@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Domain\Campaigns\Enums\CampaignTargetType;
+use App\Domain\Media\Models\MediaAsset;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,7 +38,7 @@ class CampaignRequest extends FormRequest
             'publish' => ['boolean'],
 
             'creatives' => ['required', 'array', 'min:1', 'max:30'],
-            'creatives.*.media_asset_id' => ['required', 'integer', 'exists:media_assets,id'],
+            'creatives.*.media_asset_id' => ['required', 'integer', Rule::exists('media_assets', 'id')->where(fn ($q) => $q->whereIn('id', MediaAsset::query()->advertising()->ready()->select('id')))],
             'creatives.*.duration' => ['required', 'integer', 'between:3,86400'],
             'creatives.*.weight' => ['required', 'integer', 'between:1,100'],
 

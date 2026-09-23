@@ -11,6 +11,7 @@ use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
 use App\Http\Requests\Business\BusinessMediaRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -53,7 +54,7 @@ class MediaController extends Controller
         ]);
     }
 
-    public function store(BusinessMediaRequest $request, StoreMediaAsset $store): RedirectResponse
+    public function store(BusinessMediaRequest $request, StoreMediaAsset $store): RedirectResponse|JsonResponse
     {
         $file = $request->file('file');
         $type = str_starts_with((string) $file->getMimeType(), 'image/') ? MediaType::Image : MediaType::Video;
@@ -64,6 +65,10 @@ class MediaController extends Controller
             'filename' => $asset->filename,
             'business_id' => $this->businessId(),
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['media' => EntityPresenter::mediaAsset($asset)], 201);
+        }
 
         return back()->with('success', 'Contenido subido. Se está procesando.');
     }

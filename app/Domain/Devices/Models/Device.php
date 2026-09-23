@@ -31,6 +31,7 @@ class Device extends Model
     {
         return [
             'status' => DeviceStatus::class,
+            'manifest_dirty' => 'boolean',
             'metadata' => 'array',
             'last_seen_at' => 'datetime',
             'last_sync_at' => 'datetime',

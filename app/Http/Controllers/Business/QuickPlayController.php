@@ -6,6 +6,7 @@ use App\Domain\Operations\Actions\RecordAudit;
 use App\Domain\QuickPlay\Actions\StartQuickPlay;
 use App\Domain\QuickPlay\Enums\QuickPlayDisplayMode;
 use App\Domain\QuickPlay\Enums\QuickPlayScope;
+use App\Domain\QuickPlay\Models\QuickPlay;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Requests\Business\StartBusinessQuickPlayRequest;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,7 +20,7 @@ class QuickPlayController extends \App\Http\Controllers\Admin\QuickPlayControlle
 
     protected function quickPlaysQuery(): Builder
     {
-        return parent::quickPlaysQuery()->where('business_id', $this->businessId());
+        return QuickPlay::query()->where('business_id', $this->businessId());
     }
 
     protected function mediaQuery(): Builder

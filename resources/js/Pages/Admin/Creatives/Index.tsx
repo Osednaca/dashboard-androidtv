@@ -1,7 +1,7 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { Grid2X2, Image as ImageIcon, List, Plus, Trash2, Upload } from 'lucide-react';
+import { UploadDropzone } from '@/Components/app/UploadDropzone';
+import { Head, router } from '@inertiajs/react';
+import { Grid2X2, Image as ImageIcon, List, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { FilterBar } from '@/Components/app/FilterBar';
@@ -26,17 +26,14 @@ export default function CreativesIndex({
 }: {
     assets: Paginated<MediaEntity>;
     filters: { search?: string; type?: string; processing_status?: string };
-    options: { types: Option[]; statuses: Option[]; advertisers: Array<{ id: number; name: string }>; businesses: Array<{ id: number; name: string }> };
+    options: { types: Option[]; statuses: Option[]; advertisers: Array<{ id: number; name: string }> };
 }) {
     const [view, setView] = useState<'grid' | 'list'>('grid');
     const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState<MediaEntity | null>(null);
 
-    const form = useForm<{ file: File | null; advertiser_id: string; business_id: string }>({
-        file: null,
-        advertiser_id: '',
-        business_id: '',
-    });
+    const [advertiserId, setAdvertiserId] = useState('');
+    const [uploadBusy, setUploadBusy] = useState(false);
 
     const applyFilter = (patch: Record<string, string>) => {
         const next: Record<string, string> = { ...filters, ...patch };
@@ -44,17 +41,6 @@ export default function CreativesIndex({
             if (!next[key]) delete next[key];
         });
         router.get('/admin/creatives', next, { preserveState: true, preserveScroll: true, replace: true });
-    };
-
-    const submitUpload = () => {
-        form.post('/admin/creatives', {
-            forceFormData: true,
-            onSuccess: () => {
-                setUploading(false);
-                form.reset();
-                toast.success('Archivo subido. Se está procesando.');
-            },
-        });
     };
 
     const columns: Array<Column<MediaEntity>> = [
@@ -158,7 +144,7 @@ export default function CreativesIndex({
                     {assets.data.length === 0 ? (
                         <EmptyState icon={ImageIcon} title="Sin creatividades" description="Sube imágenes JPG, PNG, WebP o videos MP4." />
                     ) : view === 'grid' ? (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                        <div className="grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                             {assets.data.map((asset) => (
                                 <Card key={asset.id} className="group">
                                     <CardContent className="space-y-2 pt-4">
@@ -195,73 +181,20 @@ export default function CreativesIndex({
                 <Pagination paginator={assets} />
             </div>
 
-            <Dialog open={uploading} onOpenChange={setUploading}>
+            <Dialog open={uploading} onOpenChange={(open) => { if (!uploadBusy) setUploading(open); }}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Subir creatividad</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="file">Archivo</Label>
-                            <label
-                                htmlFor="file"
-                                className="flex cursor-pointer flex-col items-center gap-2 rounded-control border border-dashed border-line-strong bg-inset px-4 py-8 text-center transition-colors hover:border-accent/50"
-                            >
-                                <Upload className="size-5 text-faint" />
-                                <span className="text-xs text-muted">
-                                    {form.data.file ? form.data.file.name : 'Arrastra o selecciona JPG, PNG, WebP o MP4 (máx. 500 MB)'}
-                                </span>
-                                <input
-                                    id="file"
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.webp,.mp4"
-                                    className="hidden"
-                                    onChange={(event) => form.setData('file', event.target.files?.[0] ?? null)}
-                                />
-                            </label>
-                            {form.errors.file ? <p className="text-xs text-danger">{form.errors.file}</p> : null}
-                        </div>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div className="space-y-1.5">
-                                <Label>Anunciante (opcional)</Label>
-                                <Select value={form.data.advertiser_id || undefined} onValueChange={(value) => form.setData('advertiser_id', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sin anunciante" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {options.advertisers.map((advertiser) => (
-                                            <SelectItem key={advertiser.id} value={String(advertiser.id)}>
-                                                {advertiser.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label>Negocio (opcional)</Label>
-                                <Select value={form.data.business_id || undefined} onValueChange={(value) => form.setData('business_id', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sin negocio" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {options.businesses.map((business) => (
-                                            <SelectItem key={business.id} value={String(business.id)}>
-                                                {business.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                        <Label>Anunciante (opcional)</Label>
+                        <Select disabled={uploadBusy} value={advertiserId || 'none'} onValueChange={(value) => setAdvertiserId(value === 'none' ? '' : value)}>
+                            <SelectTrigger><SelectValue placeholder="Sin anunciante" /></SelectTrigger>
+                            <SelectContent><SelectItem value="none">Sin anunciante</SelectItem>{options.advertisers.map((advertiser) => <SelectItem key={advertiser.id} value={String(advertiser.id)}>{advertiser.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <UploadDropzone action="/admin/creatives" metadata={{ advertiser_id: advertiserId }} onBusyChange={setUploadBusy} />
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setUploading(false)}>
-                            Cancelar
-                        </Button>
-                        <Button variant="primary" onClick={submitUpload} disabled={form.processing || !form.data.file}>
-                            Subir archivo
-                        </Button>
-                    </DialogFooter>
+                    <DialogFooter><Button variant="ghost" disabled={uploadBusy} onClick={() => setUploading(false)}>Cerrar</Button></DialogFooter>
                 </DialogContent>
             </Dialog>
 

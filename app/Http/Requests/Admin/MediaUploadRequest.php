@@ -22,7 +22,7 @@ class MediaUploadRequest extends FormRequest
         return [
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,mp4', "max:{$maxVideo}"],
             'advertiser_id' => ['nullable', 'integer', 'exists:advertisers,id'],
-            'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
+            'business_id' => ['prohibited'],
         ];
     }
 

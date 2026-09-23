@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Advertisers\Models\Advertiser;
-use App\Domain\Businesses\Models\Business;
 use App\Domain\Media\Actions\StoreMediaAsset;
 use App\Domain\Media\Enums\MediaType;
 use App\Domain\Media\Enums\ProcessingStatus;
@@ -12,6 +11,7 @@ use App\Domain\Operations\Actions\RecordAudit;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
 use App\Http\Requests\Admin\MediaUploadRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -30,7 +30,7 @@ class MediaController extends Controller
             'processing_status' => ['nullable', 'string'],
         ]);
 
-        $assets = MediaAsset::query()
+        $assets = MediaAsset::query()->advertising()
             ->search($request->string('search')->toString())
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
             ->when($request->filled('processing_status'), fn ($q) => $q->where('processing_status', $request->string('processing_status')))
@@ -47,12 +47,11 @@ class MediaController extends Controller
                 'types' => collect(MediaType::cases())->map(fn ($t) => ['value' => $t->value, 'label' => $t->label()])->all(),
                 'statuses' => collect(ProcessingStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->all(),
                 'advertisers' => Advertiser::query()->orderBy('name')->get(['id', 'name']),
-                'businesses' => Business::query()->orderBy('name')->get(['id', 'name']),
             ],
         ]);
     }
 
-    public function store(MediaUploadRequest $request, StoreMediaAsset $store): RedirectResponse
+    public function store(MediaUploadRequest $request, StoreMediaAsset $store): RedirectResponse|JsonResponse
     {
         $this->authorize('create', MediaAsset::class);
 
@@ -62,13 +61,16 @@ class MediaController extends Controller
         $owner = null;
         if ($request->filled('advertiser_id')) {
             $owner = Advertiser::query()->find($request->integer('advertiser_id'));
-        } elseif ($request->filled('business_id')) {
-            $owner = Business::query()->find($request->integer('business_id'));
+
         }
 
         $asset = $store->handle($file, $type, $owner);
 
         app(RecordAudit::class)->handle('media.uploaded', $asset, [], ['filename' => $asset->filename]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['media' => EntityPresenter::mediaAsset($asset)], 201);
+        }
 
         return back()->with('success', 'Archivo subido. Se está procesando.');
     }
@@ -76,6 +78,7 @@ class MediaController extends Controller
     public function destroy(MediaAsset $media): RedirectResponse
     {
         $this->authorize('delete', $media);
+        abort_unless(MediaAsset::query()->advertising()->whereKey($media->id)->exists(), 404);
 
         if ($media->isLockedByActiveCampaign()) {
             return back()->with('error', 'No se puede eliminar: la creatividad está en una campaña activa.');

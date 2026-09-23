@@ -49,11 +49,11 @@ export function PlaylistItemRow({
             onDragOver={onDragOver}
             onDrop={() => onDrop?.(item.id)}
             className={cn(
-                'flex flex-col gap-3 rounded-control border bg-surface p-3 transition-colors sm:flex-row sm:items-center',
+                'flex min-w-0 flex-col gap-3 rounded-control border bg-surface p-3 transition-colors sm:flex-row sm:items-center',
                 dragging ? 'border-accent/60 opacity-60' : 'border-line',
             )}
         >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
                 {canManage ? (
                     <span
                         draggable
@@ -77,10 +77,10 @@ export function PlaylistItemRow({
                 </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 sm:ml-auto sm:justify-end">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 sm:ml-auto sm:justify-end">
                 {canManage ? (
                     <>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-1">
                                 <Input
                                     type="number"

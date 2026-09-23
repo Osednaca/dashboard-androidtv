@@ -1,4 +1,5 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { UploadDropzone } from '@/Components/app/UploadDropzone';
+import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     Check,
@@ -8,11 +9,9 @@ import {
     Search,
     Send,
     Sparkles,
-    Upload,
     Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { FormField } from '@/Components/app/FormField';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
@@ -88,9 +87,7 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
     const { data, setData, errors } = form;
     const targetError = (errors as Record<string, string | undefined>).targets;
     const [deviceSearch, setDeviceSearch] = useState('');
-    const [uploading, setUploading] = useState(false);
 
-    const uploadForm = useForm<{ file: File | null }>({ file: null });
 
     const selectedMedia = useMemo(
         () => options.media.find((media) => media.id === data.media_asset_id) ?? null,
@@ -150,22 +147,6 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
         setData(field, current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
     };
 
-    const submitUpload = (file: File | null) => {
-        if (!file || uploading) return;
-        setUploading(true);
-        uploadForm.clearErrors();
-        router.post(portal === 'business' ? '/business/library' : '/admin/creatives', { file }, {
-            forceFormData: true,
-            onSuccess: () => {
-                uploadForm.reset();
-                toast.success('Archivo subido. Aparecerá en la biblioteca en unos segundos.');
-                setTimeout(() => router.reload({ only: ['options'] }), 1500);
-            },
-            onError: (errors) => { if (errors.file) uploadForm.setError('file', errors.file); },
-            onFinish: () => setUploading(false),
-        });
-    };
-
     const submit = () => {
         form.transform((payload) => ({
             ...payload,
@@ -198,25 +179,9 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                     <Card>
                         <CardHeader>
                             <CardTitle>1 · Contenido</CardTitle>
-                            {can(portal === 'business' ? 'business.media.upload' : 'creatives.manage') ? (
-                                <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-accent">
-                                    <Upload className="size-3.5" />
-                                    {uploading ? 'Subiendo…' : 'Subir archivo'}
-                                    <input
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.webp,.mp4"
-                                        className="hidden"
-                                        disabled={uploading}
-                                        onChange={(event) => {
-                                            submitUpload(event.target.files?.[0] ?? null);
-                                            event.target.value = '';
-                                        }}
-                                    />
-                                </label>
-                            ) : null}
                         </CardHeader>
                         <CardContent>
-                            {uploadForm.errors.file ? <p role="alert" className="mb-3 text-xs text-danger">{uploadForm.errors.file}</p> : null}
+                            {can(portal === 'business' ? 'business.media.upload' : 'creatives.manage') && <div className="mb-4"><UploadDropzone action={portal === 'business' ? '/business/library' : '/admin/creatives'} /></div>}
                             {options.media.length === 0 ? (
                                 <p className="rounded-control border border-dashed border-line px-4 py-8 text-center text-xs text-faint">
                                     No hay creatividades disponibles. Sube una imagen o video.

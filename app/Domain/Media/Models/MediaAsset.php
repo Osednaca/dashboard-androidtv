@@ -2,6 +2,7 @@
 
 namespace App\Domain\Media\Models;
 
+use App\Domain\Advertisers\Models\Advertiser;
 use App\Domain\Campaigns\Models\CampaignCreative;
 use App\Domain\Media\Enums\MediaType;
 use App\Domain\Media\Enums\ProcessingStatus;
@@ -67,6 +68,12 @@ class MediaAsset extends Model
     public function playbackEvents(): HasMany
     {
         return $this->hasMany(PlaybackEvent::class);
+    }
+
+    public function scopeAdvertising(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->whereNull('owner_type')
+            ->orWhere('owner_type', (new Advertiser)->getMorphClass()));
     }
 
     public function getUrlAttribute(): string

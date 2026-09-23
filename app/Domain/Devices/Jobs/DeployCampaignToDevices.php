@@ -8,7 +8,6 @@ use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Models\Device;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Log;
 
 class DeployCampaignToDevices implements ShouldQueue
 {
@@ -16,27 +15,16 @@ class DeployCampaignToDevices implements ShouldQueue
 
     public int $tries = 3;
 
+    public bool $deleteWhenMissingModels = true;
+
     public function __construct(public Campaign $campaign) {}
 
     public function handle(ResolveCampaignTargets $targets, BuildDeviceManifest $manifestBuilder): void
     {
         $deviceIds = $targets->devicesFor($this->campaign)->pluck('id');
-
-        $deviceIds->chunk(100)->each(function ($chunk) use ($manifestBuilder) {
-            Device::query()
-                ->whereIn('id', $chunk)
-                ->with(['business', 'location', 'currentLayout'])
-                ->each(function ($device) use ($manifestBuilder) {
-                    try {
-                        $manifestBuilder->handle($device);
-                    } catch (\Throwable $e) {
-                        Log::warning('Manifest build failed during campaign deploy', [
-                            'device_id' => $device->id,
-                            'campaign_id' => $this->campaign->id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                });
-        });
+        foreach (Device::query()->whereIn('id', $deviceIds)->get() as $device) {
+            // Rebuild from current DB state; propagate failures so the queue retries.
+            $manifestBuilder->handle($device);
+        }
     }
 }

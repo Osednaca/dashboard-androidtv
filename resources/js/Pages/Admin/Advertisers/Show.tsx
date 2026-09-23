@@ -13,6 +13,8 @@ import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
+import { UploadDropzone } from '@/Components/app/UploadDropzone';
+import { usePermissions } from '@/Hooks/usePermissions';
 import { StatusBadge } from '@/Components/app/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
@@ -31,6 +33,7 @@ export default function AdvertiserShow({
     creatives: MediaEntity[];
     analytics: { series: Array<{ date: string; label: string; playbacks: number; completed: number }> };
 }) {
+    const { can } = usePermissions();
     const campaignColumns: Array<Column<CampaignEntity>> = [
         {
             key: 'name',
@@ -91,15 +94,15 @@ export default function AdvertiserShow({
                         <CardHeader>
                             <CardTitle>Contacto</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                            <p className="flex items-center gap-2 text-muted">
-                                <Building2 className="size-4 text-faint" /> {advertiser.contact_name ?? '—'}
+                        <CardContent className="space-y-3 break-words text-sm">
+                            <p className="flex min-w-0 items-center gap-2 break-all text-muted">
+                                <Building2 className="size-4 shrink-0 text-faint" /> {advertiser.contact_name ?? '—'}
                             </p>
-                            <p className="flex items-center gap-2 text-muted">
-                                <Mail className="size-4 text-faint" /> {advertiser.contact_email ?? '—'}
+                            <p className="flex min-w-0 items-center gap-2 break-all text-muted">
+                                <Mail className="size-4 shrink-0 text-faint" /> {advertiser.contact_email ?? '—'}
                             </p>
-                            <p className="flex items-center gap-2 text-muted">
-                                <Phone className="size-4 text-faint" /> {advertiser.contact_phone ?? '—'}
+                            <p className="flex min-w-0 items-center gap-2 break-all text-muted">
+                                <Phone className="size-4 shrink-0 text-faint" /> {advertiser.contact_phone ?? '—'}
                             </p>
                         </CardContent>
                     </Card>
@@ -113,11 +116,12 @@ export default function AdvertiserShow({
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="creatives" className="mt-4">
+                <TabsContent value="creatives" className="mt-4 space-y-4">
+                    {can('creatives.manage') && <UploadDropzone action="/admin/creatives" metadata={{ advertiser_id: String(advertiser.id) }} />}
                     {creatives.length === 0 ? (
                         <EmptyState icon={PlayCircle} title="Sin creatividades" />
                     ) : (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                             {creatives.map((creative) => (
                                 <Card key={creative.id}>
                                     <CardContent className="space-y-2 pt-4">
@@ -162,7 +166,7 @@ export default function AdvertiserShow({
                         <CardHeader>
                             <CardTitle>Contacto comercial</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
+                        <CardContent className="space-y-3 break-words text-sm">
                             <p className="text-muted">Nombre: <span className="text-fg">{advertiser.contact_name ?? '—'}</span></p>
                             <p className="text-muted">Correo: <span className="text-fg">{advertiser.contact_email ?? '—'}</span></p>
                             <p className="text-muted">Teléfono: <span className="text-fg">{advertiser.contact_phone ?? '—'}</span></p>
@@ -172,7 +176,7 @@ export default function AdvertiserShow({
                         <CardHeader>
                             <CardTitle>Facturación</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
+                        <CardContent className="space-y-3 break-words text-sm">
                             <p className="text-muted">Razón social: <span className="text-fg">{advertiser.billing_name ?? '—'}</span></p>
                             <p className="text-muted">NIT: <span className="text-fg">{advertiser.billing_tax_id ?? '—'}</span></p>
                             <p className="text-muted">Correo: <span className="text-fg">{advertiser.billing_email ?? '—'}</span></p>

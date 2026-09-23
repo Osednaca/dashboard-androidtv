@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\Device;
 
+use App\Domain\Campaigns\Actions\RefreshCampaignDates;
+use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Models\Device;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +15,12 @@ class ManifestController extends Controller
     {
         /** @var Device $device */
         $device = $request->user();
+        app(RefreshCampaignDates::class)->handle();
+        $device->refresh();
+        if ($device->manifest_dirty) {
+            app(BuildDeviceManifest::class)->handle($device);
+            $device->refresh();
+        }
 
         $manifest = $device->manifests()->where('status', 'pending')->latest()->first()
             ?? $device->manifests()->where('status', 'current')->latest()->first();

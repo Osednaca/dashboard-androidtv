@@ -107,6 +107,7 @@ class CampaignTest extends TestCase
         $campaign = Campaign::factory()->create([
             'advertiser_id' => Advertiser::factory(),
             'status' => CampaignStatus::Draft,
+            'starts_at' => today(), 'ends_at' => today()->addWeek(),
         ]);
         $campaign->creatives()->create([
             'media_asset_id' => MediaAsset::factory()->create()->id,

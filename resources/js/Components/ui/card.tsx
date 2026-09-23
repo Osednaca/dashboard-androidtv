@@ -5,7 +5,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
     return (
         <div
             className={cn(
-                'rounded-card border border-line bg-card',
+                'min-w-0 rounded-card border border-line bg-card',
                 className,
             )}
             {...props}
@@ -16,7 +16,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     return (
         <div
-            className={cn('flex items-start justify-between gap-3 px-5 pt-4 pb-3', className)}
+            className={cn('flex min-w-0 flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3', className)}
             {...props}
         />
     );

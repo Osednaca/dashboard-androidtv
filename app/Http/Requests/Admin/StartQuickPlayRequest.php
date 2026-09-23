@@ -23,7 +23,7 @@ class StartQuickPlayRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'media_asset_id' => ['required', 'integer', 'exists:media_assets,id'],
+            'media_asset_id' => ['required', 'integer', Rule::exists('media_assets', 'id')->where(fn ($q) => $q->whereIn('id', MediaAsset::query()->advertising()->ready()->select('id')))],
             'display_mode' => ['required', Rule::enum(QuickPlayDisplayMode::class)],
             'scope' => ['required', Rule::enum(QuickPlayScope::class)],
             'duration' => ['nullable', 'integer', 'between:3,3600'],

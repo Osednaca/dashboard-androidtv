@@ -145,6 +145,7 @@ class BuildDeviceManifest
 
         $device->forceFill([
             'pending_manifest_version' => $version,
+            'manifest_dirty' => false,
             'current_playlist_id' => $activePlaylist?->id ?? $device->current_playlist_id,
         ])->save();
 
@@ -158,6 +159,8 @@ class BuildDeviceManifest
     {
         return Campaign::query()
             ->where('status', CampaignStatus::Active->value)
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhereDate('starts_at', '<=', today()))
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhereDate('ends_at', '>=', today()))
             ->with(['creatives' => fn ($q) => $q->where('status', 'active'), 'creatives.mediaAsset'])
             ->get()
             ->filter(fn (Campaign $campaign) => $this->targets->devicesFor($campaign)->whereKey($device->id)->exists())

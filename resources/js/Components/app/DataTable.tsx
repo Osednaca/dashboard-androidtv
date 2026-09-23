@@ -66,13 +66,13 @@ export function DataTable<T>({
                                 onRowClick && 'cursor-pointer transition-colors active:bg-surface',
                             )}
                         >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
                                     {mobileTitle ? mobileTitle(row) : titleColumn.cell(row)}
                                 </div>
                                 {actionColumns.length > 0 ? (
                                     <div
-                                        className="flex shrink-0 items-center gap-1"
+                                        className="flex max-w-full flex-wrap items-center gap-1"
                                         onClick={(event) => event.stopPropagation()}
                                     >
                                         {actionColumns.map((column) => (
@@ -89,11 +89,11 @@ export function DataTable<T>({
                                         if (!label) return null;
 
                                         return (
-                                            <div key={column.key} className="flex items-start justify-between gap-3">
+                                            <div key={column.key} className="flex flex-wrap items-start justify-between gap-3">
                                                 <dt className="shrink-0 text-[11px] uppercase tracking-wide text-faint">
                                                     {label}
                                                 </dt>
-                                                <dd className="min-w-0 text-right text-sm text-fg">
+                                                <dd className="min-w-0 max-w-full break-words text-right text-sm text-fg">
                                                     {column.cell(row)}
                                                 </dd>
                                             </div>

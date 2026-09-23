@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Analytics\Jobs\AggregateAnalyticsForDate;
+use App\Domain\Campaigns\Actions\RefreshCampaignDates;
 use App\Domain\Devices\Jobs\MarkOfflineDevices;
 use App\Domain\Devices\Jobs\PruneDeviceHeartbeats;
 use App\Domain\QuickPlay\Jobs\FailExpiredQuickPlays;
@@ -43,3 +44,5 @@ Schedule::job(new FailExpiredQuickPlays)
 
 Schedule::command('queue:prune-failed --hours=48')->daily();
 Schedule::command('model:prune')->daily();
+
+Schedule::call(fn () => app(RefreshCampaignDates::class)->handle())->everyMinute()->name('campaign-dates')->withoutOverlapping();

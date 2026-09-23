@@ -200,7 +200,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                 title={campaign ? `Editar ${campaign.name}` : 'Nueva campaña'}
                 description="Configura la campaña en pasos: información, creatividades, segmentación, programación y publicación."
                 actions={
-                    <div className="flex gap-2">
+                    <div className="flex max-w-full flex-wrap gap-2">
                         <Button variant="secondary" size="sm" onClick={() => submit(false)} disabled={form.processing}>
                             <Save className="size-4" />
                             Guardar borrador
@@ -277,12 +277,12 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                         {data.creatives.map((creative, index) => {
                                             const media = options.creatives.find((item) => item.id === creative.media_asset_id);
                                             return (
-                                                <div key={String(creative.media_asset_id)} className="flex items-center gap-3 rounded-control border border-line bg-surface p-2">
-                                                    <MediaThumbnail media={media} className="w-24" />
+                                                <div key={String(creative.media_asset_id)} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-control border border-line bg-surface p-2 sm:grid-cols-[96px_minmax(0,1fr)_auto]">
+                                                    <MediaThumbnail media={media} className="col-span-2 w-24 sm:col-span-1" />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-xs text-fg">{media?.filename ?? '—'}</p>
                                                         {(errors as Record<string, string>)[`creatives.${index}.duration`] && <p className="text-xs text-danger">{(errors as Record<string, string>)[`creatives.${index}.duration`]}</p>}
-                                                        <div className="mt-1 flex items-center gap-2">
+                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
                                                             <label className="flex items-center gap-1 text-[11px] text-faint">
                                                                 Duración
                                                                 <Input
@@ -308,7 +308,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                                             </label>
                                                         </div>
                                                     </div>
-                                                    <Button variant="ghost" size="icon-sm" onClick={() => removeCreative(creative.media_asset_id)}>
+                                                    <Button variant="ghost" size="icon-sm" aria-label="Quitar creatividad" onClick={() => removeCreative(creative.media_asset_id)}>
                                                         <Trash2 className="size-3.5 text-danger" />
                                                     </Button>
                                                 </div>
@@ -376,7 +376,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                 <Input type="time" value={data.daily_end_time} onChange={(e) => setData('daily_end_time', e.target.value)} />
                             </FormField>
                             <FormField label="Días de la semana" className="sm:col-span-2">
-                                <div className="flex gap-1.5">
+                                <div className="flex flex-wrap gap-1.5">
                                     {weekDays.map((day) => {
                                         const active = data.days_of_week.includes(day.value);
                                         return (
@@ -457,7 +457,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                         </div>
                     ) : null}
 
-                    <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
                         <Button variant="ghost" size="sm" onClick={() => setStep((value) => Math.max(0, value - 1))} disabled={step === 0}>
                             <ArrowLeft className="size-4" />
                             Atrás
@@ -573,7 +573,7 @@ function TargetBuilder({
                         )}
                     </FormField>
 
-                    <div className="flex items-end gap-2">
+                    <div className="flex min-w-0 flex-wrap items-end gap-2">
                         <label className="flex h-10 flex-1 items-center gap-2 rounded-control border border-line bg-inset px-3 text-xs text-muted">
                             <input
                                 type="checkbox"

@@ -3,9 +3,10 @@
 namespace App\Domain\Campaigns\Actions;
 
 use App\Domain\Campaigns\Enums\CampaignStatus;
+use App\Domain\Campaigns\Enums\CreativeStatus;
 use App\Domain\Campaigns\Events\CampaignPublished;
 use App\Domain\Campaigns\Models\Campaign;
-use App\Domain\Devices\Jobs\DeployCampaignToDevices;
+use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Operations\Actions\RaiseAlert;
 use App\Domain\Operations\Enums\AlertSeverity;
 use App\Domain\Operations\Enums\AlertType;
@@ -21,7 +22,7 @@ class PublishCampaign
 
     public function handle(Campaign $campaign): Campaign
     {
-        $campaign->loadMissing(['creatives', 'targets']);
+        $campaign->load(['creatives', 'targets']);
 
         if ($campaign->creatives->isEmpty()) {
             $this->alerts->handle(
@@ -51,6 +52,11 @@ class PublishCampaign
             ]);
         }
 
+        $mediaIds = $campaign->creatives->where('status', CreativeStatus::Active)->pluck('media_asset_id')->unique();
+        if ($mediaIds->isEmpty() || MediaAsset::query()->advertising()->ready()->whereIn('id', $mediaIds)->count() !== $mediaIds->count()) {
+            throw ValidationException::withMessages(['creatives' => 'Usa creatividades publicitarias activas y procesadas.']);
+        }
+
         $summary = $this->targets->summary($campaign);
 
         if ($summary['screens'] === 0) {
@@ -78,7 +84,8 @@ class PublishCampaign
             $this->alerts->resolve(AlertType::CampaignWithoutCreatives, $campaign);
             $this->alerts->resolve(AlertType::CampaignWithoutTargets, $campaign);
 
-            DeployCampaignToDevices::dispatch($campaign);
+            $invalidator = app(InvalidateCampaignDevices::class);
+            $invalidator->handle($invalidator->targets($campaign));
 
             CampaignPublished::dispatch($campaign);
 
@@ -88,28 +95,27 @@ class PublishCampaign
 
     public function pause(Campaign $campaign): Campaign
     {
-        $campaign->forceFill([
-            'status' => CampaignStatus::Paused,
-            'last_activity_at' => now(),
-        ])->save();
-
-        return $campaign;
+        return $this->changeStatus($campaign, CampaignStatus::Paused);
     }
 
     public function resume(Campaign $campaign): Campaign
     {
-        $campaign->forceFill([
-            'status' => $this->targets->recommendedStatus($campaign),
-            'last_activity_at' => now(),
-        ])->save();
-
-        return $campaign;
+        return $this->handle($campaign);
     }
 
     public function archive(Campaign $campaign): Campaign
     {
-        $campaign->forceFill(['status' => CampaignStatus::Archived])->save();
+        return $this->changeStatus($campaign, CampaignStatus::Archived);
+    }
 
-        return $campaign;
+    private function changeStatus(Campaign $campaign, CampaignStatus $status): Campaign
+    {
+        return DB::transaction(function () use ($campaign, $status) {
+            $campaign->forceFill(['status' => $status, 'last_activity_at' => now()])->save();
+            $invalidator = app(InvalidateCampaignDevices::class);
+            $invalidator->handle($invalidator->targets($campaign));
+
+            return $campaign;
+        });
     }
 }
