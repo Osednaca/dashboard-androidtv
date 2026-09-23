@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -179,15 +179,20 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
     const submit = (publish: boolean) => {
         setData('publish', publish);
         const payload = { ...data, publish };
+        form.transform(() => payload);
         if (campaign) {
-            router.put(`/admin/campaigns/${campaign.id}`, payload, { forceFormData: false });
+            form.put(`/admin/campaigns/${campaign.id}`, { preserveScroll: true });
         } else {
-            router.post('/admin/campaigns', payload);
+            form.post('/admin/campaigns', { preserveScroll: true });
         }
     };
 
     return (
         <AdminLayout>
+            {Object.keys(errors).length > 0 && <div role="alert" className="mb-4 rounded-control border border-danger p-4 text-sm text-danger">
+                <p className="font-semibold">No se pudo guardar la campaña. Revisa estos campos:</p>
+                <ul className="mt-2 list-inside list-disc">{Object.entries(errors).map(([field, message]) => <li key={field}>{message}</li>)}</ul>
+            </div>}
             <Head title={campaign ? `Editar ${campaign.name}` : 'Nueva campaña'} />
 
             <PageHeader
@@ -269,23 +274,24 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                     </p>
                                 ) : (
                                     <div className="space-y-2">
-                                        {data.creatives.map((creative) => {
+                                        {data.creatives.map((creative, index) => {
                                             const media = options.creatives.find((item) => item.id === creative.media_asset_id);
                                             return (
                                                 <div key={String(creative.media_asset_id)} className="flex items-center gap-3 rounded-control border border-line bg-surface p-2">
                                                     <MediaThumbnail media={media} className="w-24" />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-xs text-fg">{media?.filename ?? '—'}</p>
+                                                        {(errors as Record<string, string>)[`creatives.${index}.duration`] && <p className="text-xs text-danger">{(errors as Record<string, string>)[`creatives.${index}.duration`]}</p>}
                                                         <div className="mt-1 flex items-center gap-2">
                                                             <label className="flex items-center gap-1 text-[11px] text-faint">
                                                                 Duración
                                                                 <Input
                                                                     type="number"
                                                                     min={3}
-                                                                    max={300}
+                                                                    max={86400}
                                                                     value={creative.duration}
                                                                     onChange={(e) => updateCreative(creative.media_asset_id, { duration: Number(e.target.value) })}
-                                                                    className="h-7 w-16 px-2 text-xs"
+                                                                    className="h-7 w-24 px-2 text-xs"
                                                                 />
                                                                 s
                                                             </label>

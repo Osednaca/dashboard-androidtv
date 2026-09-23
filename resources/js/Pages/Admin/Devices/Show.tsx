@@ -1,4 +1,5 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { DeviceDiagnostics, describeDeviceError, type DeviceDiagnosticsData } from '@/Components/app/DeviceDiagnostics';
+import { Head, router, useForm, usePoll } from '@inertiajs/react';
 import {
     Clock,
     HardDrive,
@@ -55,6 +56,7 @@ interface PlaybackRow {
 }
 
 interface HeartbeatRow {
+    diagnostics?: DeviceDiagnosticsData | null;
     recorded_at: string | null;
     available_storage: number | null;
     player_status: string | null;
@@ -67,6 +69,7 @@ export default function DeviceShow({
     manifests,
     playback,
     heartbeats,
+    failures,
     commandTypes,
     adminPinConfigured,
     canManagePin,
@@ -76,6 +79,7 @@ export default function DeviceShow({
     manifests: ManifestRow[];
     playback: PlaybackRow[];
     heartbeats: HeartbeatRow[];
+    failures: PlaybackRow[];
     commandTypes: CommandType[];
     adminPinConfigured: boolean;
     canManagePin: boolean;
@@ -83,6 +87,7 @@ export default function DeviceShow({
     const [pendingCommand, setPendingCommand] = useState<CommandType | null>(null);
     const [confirmingRevoke, setConfirmingRevoke] = useState(false);
     const pinForm = useForm({ pin: '', pin_confirmation: '' });
+    usePoll(15000, { only: ['heartbeats', 'failures', 'commands', 'playback'] });
 
     const sendCommand = (type: CommandType) => {
         if (type.requires_confirmation) {
@@ -184,6 +189,7 @@ export default function DeviceShow({
                     <TabsTrigger value="sync">Sincronización</TabsTrigger>
                     <TabsTrigger value="playback">Reproducciones</TabsTrigger>
                     <TabsTrigger value="logs">Logs</TabsTrigger>
+                    <TabsTrigger value="validation">Validación</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -211,9 +217,10 @@ export default function DeviceShow({
                         </CardContent>
                     </Card>
                     <Card className="xl:col-span-2">
-                        <CardHeader><CardTitle>PIN administrativo del TV</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>PIN para apps anteriores a 0.1.9</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-sm text-muted">
+                                La app 0.1.9 y posteriores acceden y guardan ajustes sin PIN. Este control solo se conserva para versiones antiguas.{' '}
                                 {adminPinConfigured ? 'Esta pantalla ya tiene un PIN. Puedes reemplazarlo aquí.' : 'Configura un PIN para abrir los ajustes de esta pantalla.'}
                                 {' '}Usa seis dígitos. El TV necesita conexión con el servidor para validarlo.
                             </p>
@@ -324,6 +331,30 @@ export default function DeviceShow({
                             </ul>
                         </CardContent>
                     </Card>
+                </TabsContent>
+                <TabsContent value="validation" className="mt-4 space-y-4">
+                    <DeviceDiagnostics diagnostics={heartbeats[0]?.diagnostics} recordedAt={heartbeats[0]?.recorded_at} />
+                    <Card><CardHeader><CardTitle>Errores de reproducción recientes</CardTitle></CardHeader><CardContent>
+                        {failures.length === 0 ? <p className="text-sm text-muted">Sin errores de reproducción registrados.</p> :
+                            <ul className="divide-y divide-line">{failures.map((event) => <li key={event.id} className="space-y-1 py-3 text-sm">
+                                <p>{event.media ?? 'Archivo sin nombre'} · {formatDateTime(event.started_at)}</p>
+                                <Badge tone="danger">{event.error_code}</Badge>
+                                <p className="text-muted">{describeDeviceError(event.error_code ?? '')}</p>
+                            </li>)}</ul>}
+                    </CardContent></Card>
+                    <Card><CardHeader><CardTitle>Errores de sincronización recientes</CardTitle></CardHeader><CardContent>
+                        {heartbeats.some((h) => h.diagnostics?.sync_error) ? <ul className="divide-y divide-line">
+                            {heartbeats.filter((h) => h.diagnostics?.sync_error).map((h, i) => <li key={h.recorded_at ?? i} className="space-y-1 py-3 text-sm">
+                                <p>{formatDateTime(h.recorded_at)}</p><Badge tone="danger">{h.diagnostics?.sync_error}</Badge>
+                                <p className="text-muted">{describeDeviceError(h.diagnostics!.sync_error!)}</p>
+                            </li>)}
+                        </ul> : <p className="text-sm text-muted">Sin errores en los reportes recientes.</p>}
+                    </CardContent></Card>
+                    <Card><CardHeader><CardTitle>Comandos fallidos recientes</CardTitle></CardHeader><CardContent>
+                        {commands.some((c) => c.error) ? <ul className="divide-y divide-line">{commands.filter((c) => c.error).map((c) =>
+                            <li key={c.id} className="py-3 text-sm"><p>{c.command.label} · {formatDateTime(c.created_at)}</p><p className="break-words text-danger">{c.error}</p></li>
+                        )}</ul> : <p className="text-sm text-muted">Sin errores en los comandos recientes.</p>}
+                    </CardContent></Card>
                 </TabsContent>
             </Tabs>
 

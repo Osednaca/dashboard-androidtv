@@ -18,6 +18,33 @@ class CampaignTest extends TestCase
 {
     use CreatesUsers, RefreshDatabase;
 
+    public function test_long_creative_durations_are_saved_and_invalid_values_report_field_errors(): void
+    {
+        $advertiser = Advertiser::factory()->create();
+        $image = MediaAsset::factory()->create();
+        $video = MediaAsset::factory()->create(['type' => 'video', 'mime_type' => 'video/mp4', 'duration' => 1200]);
+        $body = [
+            'advertiser_id' => $advertiser->id, 'name' => 'Campaña larga',
+            'starts_at' => today()->toDateString(), 'ends_at' => today()->addMonth()->toDateString(),
+            'priority' => 5,
+            'creatives' => [
+                ['media_asset_id' => $image->id, 'duration' => 86400, 'weight' => 10],
+                ['media_asset_id' => $video->id, 'duration' => 1200, 'weight' => 10],
+            ],
+            'targets' => [['target_type' => 'city', 'target_value' => 'Bogotá', 'is_exclusion' => false]],
+        ];
+        $this->actingAs($this->superAdmin())->post('/admin/campaigns', $body)->assertSessionHasNoErrors()->assertRedirect();
+        $campaign = Campaign::query()->where('name', 'Campaña larga')->sole();
+        $this->assertSame([86400, 1200], $campaign->creatives()->orderBy('position')->pluck('duration')->all());
+        $body['creatives'][0]['duration'] = 601;
+        $this->put("/admin/campaigns/{$campaign->id}", $body)->assertSessionHasNoErrors();
+        $this->assertSame(601, $campaign->creatives()->where('media_asset_id', $image->id)->sole()->duration);
+        foreach ([0, 86401, 12.5] as $invalid) {
+            $body['creatives'][0]['duration'] = $invalid;
+            $this->put("/admin/campaigns/{$campaign->id}", $body)->assertSessionHasErrors('creatives.0.duration');
+        }
+    }
+
     public function test_a_campaign_can_be_created_with_creatives_and_targets(): void
     {
         $advertiser = Advertiser::factory()->create();

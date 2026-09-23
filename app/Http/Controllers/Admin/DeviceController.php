@@ -98,7 +98,17 @@ class DeviceController extends Controller
             'available_storage' => $h->available_storage,
             'player_status' => $h->player_status,
             'network_status' => $h->network_status,
+            'diagnostics' => $h->diagnostics,
         ]);
+
+        $failures = $device->playbackEvents()->whereNotNull('error_code')
+            ->with(['mediaAsset', 'campaign'])->latest('started_at')->limit(20)->get()
+            ->map(fn ($event) => [
+                'id' => $event->id, 'media' => $event->mediaAsset?->filename,
+                'campaign' => $event->campaign?->name, 'started_at' => $event->started_at?->toIso8601String(),
+                'duration_played' => $event->duration_played, 'completed' => $event->completed,
+                'error_code' => $event->error_code,
+            ]);
 
         return Inertia::render('Admin/Devices/Show', [
             'device' => EntityPresenter::device($device),
@@ -108,6 +118,7 @@ class DeviceController extends Controller
             'manifests' => $manifests,
             'playback' => $playback,
             'heartbeats' => $heartbeats,
+            'failures' => $failures,
             'commandTypes' => collect(DeviceCommandType::cases())->map(fn ($type) => [
                 'value' => $type->value,
                 'label' => $type->label(),

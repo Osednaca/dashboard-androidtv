@@ -78,8 +78,8 @@ class DeviceSettingsTest extends TestCase
         $device = $this->device();
         $body = ['pin' => '012345', 'settings' => ['business_percentage' => 50]];
         $this->patchJson(self::ENDPOINT, $body)->assertUnauthorized();
-        $this->withToken($device->issueToken())->patchJson(self::ENDPOINT, [...$body, 'pin' => '654321'])->assertForbidden();
-        $this->patchJson(self::ENDPOINT, [...$body, 'pin' => ''])->assertUnprocessable();
+        $this->withToken('invalid-token')->patchJson(self::ENDPOINT, $body)->assertUnauthorized();
+        $this->withToken($device->issueToken());
         $this->patchJson(self::ENDPOINT, [...$body, 'device_id' => $device->id + 1])->assertUnprocessable();
         $device->forceFill(['status' => DeviceStatus::Disabled])->save();
         $this->patchJson(self::ENDPOINT, $body)->assertForbidden();
@@ -90,7 +90,7 @@ class DeviceSettingsTest extends TestCase
         $this->assertDatabaseCount('device_manifests', 0);
     }
 
-    public function test_settings_validate_supported_fields_and_require_a_configured_pin(): void
+    public function test_settings_validate_supported_fields_and_save_without_a_configured_pin(): void
     {
         $device = $this->device();
         $this->withToken($device->issueToken());
@@ -98,8 +98,9 @@ class DeviceSettingsTest extends TestCase
             $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => $settings])->assertUnprocessable();
         }
         $device->forceFill(['admin_pin_hash' => null])->save();
-        $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['orientation' => 'portrait']])->assertStatus(409);
         $this->assertDatabaseCount('layouts', 1);
+        $this->patchJson(self::ENDPOINT, ['settings' => ['orientation' => 'portrait']])->assertOk()
+            ->assertJsonPath('manifest.payload.layout.orientation', 'portrait');
     }
 
     public function test_rotation_cycles_and_transition_survive_subsequent_settings_and_manifest_builds(): void
@@ -136,17 +137,14 @@ class DeviceSettingsTest extends TestCase
         $this->getJson('/api/v1/device/manifest')->assertOk()->assertJsonPath('manifest.version', $second->version);
     }
 
-    public function test_failed_pins_share_the_attempt_limit_with_login_and_survive_database_transactions(): void
+    public function test_legacy_pin_lockout_does_not_block_settings_for_new_players(): void
     {
-        config(['cache.default' => 'database', 'cache.limiter' => 'database']);
         $device = $this->device();
         $this->withToken($device->issueToken());
         for ($i = 0; $i < 5; $i++) {
-            $this->patchJson(self::ENDPOINT, ['pin' => '654321', 'settings' => ['split' => 'top_bottom']])->assertForbidden();
+            $this->postJson('/api/v1/device/admin/verify-pin', ['pin' => '654321'])->assertForbidden();
         }
         $this->postJson('/api/v1/device/admin/verify-pin', ['pin' => '012345'])->assertStatus(429);
-        $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['split' => 'top_bottom']])->assertStatus(429);
-        $this->travel(301)->seconds();
-        $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['split' => 'top_bottom']])->assertOk();
+        $this->patchJson(self::ENDPOINT, ['settings' => ['split' => 'top_bottom']])->assertOk();
     }
 }

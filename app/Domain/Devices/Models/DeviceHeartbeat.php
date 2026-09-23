@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'device_id', 'recorded_at', 'app_version', 'available_storage',
-    'manifest_version', 'player_status', 'network_status',
+    'manifest_version', 'player_status', 'network_status', 'diagnostics',
 ])]
 class DeviceHeartbeat extends Model
 {
@@ -20,6 +20,7 @@ class DeviceHeartbeat extends Model
             'recorded_at' => 'datetime',
             'created_at' => 'datetime',
             'available_storage' => 'integer',
+            'diagnostics' => 'array',
         ];
     }
 

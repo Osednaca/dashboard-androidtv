@@ -122,3 +122,17 @@ npm run build
 ```
 
 La migración `2026_09_12_220000_add_business_id_to_quick_plays_table` añade la propiedad del envío sin modificar el historial administrativo existente. En negocios el seguimiento consulta el estado cada seis segundos y se detiene al completar o fallar la entrega.
+
+
+## Actualización Android TV 0.1.9
+
+- La app abre y guarda ajustes sin PIN. `PATCH /api/v1/device/admin/settings` requiere únicamente el bearer del TV y `settings`; mantiene aislamiento por dispositivo y rechaza tokens revocados y pantallas deshabilitadas. El endpoint y los controles de PIN anteriores quedan disponibles para APK antiguos.
+- En **Dispositivos → pantalla → Validación** se muestran diagnóstico de sincronización, imágenes locales, carpeta privada del TV, fallos de reproducción y comandos. Se actualiza cada 15 segundos con los reportes recibidos. Los datos offline llegan al reconectar el TV.
+- El heartbeat acepta un objeto opcional `diagnostics`, guardado como JSON en `device_heartbeats`. Los APK anteriores no necesitan enviarlo.
+- Las creatividades de campañas permiten 3–86.400 segundos. El formulario muestra errores del servidor, incluidos los campos de duración.
+
+Despliegue: ejecutar `php artisan migrate --force`, compilar/publicar los assets con `npm run build` y desplegar el backend antes de instalar `Signage-TV-production-0.1.9-release.apk`. No se ha ejecutado esta migración sobre producción desde la tarea. La app conserva originales del negocio en el panel y copias verificadas en `/data/user/0/tv.signage.player/files/signage/media/`; los originales publicitarios continúan en la nube.
+
+## Archivos que sobreviven a los despliegues
+
+En EasyPanel agrega un volumen persistente a `/var/www/html/storage/app/public`, respaldando y trasladando antes los archivos existentes. La ruta `/` del dominio no crea este volumen. El arranque ya no borra `public/storage` y `php artisan signage:media-check` detecta originales o portadas ausentes sin modificar datos. [Pasos y recuperación](docs/MEDIA-PERSISTENCE.md).

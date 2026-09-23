@@ -6,21 +6,14 @@ use App\Domain\Devices\Enums\DeviceStatus;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Devices\Models\DeviceHeartbeat;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\DeviceHeartbeatRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class HeartbeatController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(DeviceHeartbeatRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'app_version' => ['nullable', 'string', 'max:40'],
-            'available_storage' => ['nullable', 'integer', 'min:0'],
-            'storage_total' => ['nullable', 'integer', 'min:0'],
-            'manifest_version' => ['nullable', 'string', 'max:40'],
-            'player_status' => ['nullable', 'string', 'max:40'],
-            'network_status' => ['nullable', 'string', 'max:40'],
-        ]);
+        $data = $request->validated();
 
         /** @var Device $device */
         $device = $request->user();
@@ -33,6 +26,7 @@ class HeartbeatController extends Controller
             'manifest_version' => $data['manifest_version'] ?? $device->current_manifest_version,
             'player_status' => $data['player_status'] ?? null,
             'network_status' => $data['network_status'] ?? null,
+            'diagnostics' => $data['diagnostics'] ?? null,
             'created_at' => now(),
         ]);
 

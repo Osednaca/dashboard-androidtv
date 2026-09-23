@@ -38,7 +38,7 @@ class CampaignRequest extends FormRequest
 
             'creatives' => ['required', 'array', 'min:1', 'max:30'],
             'creatives.*.media_asset_id' => ['required', 'integer', 'exists:media_assets,id'],
-            'creatives.*.duration' => ['required', 'integer', 'between:3,300'],
+            'creatives.*.duration' => ['required', 'integer', 'between:3,86400'],
             'creatives.*.weight' => ['required', 'integer', 'between:1,100'],
 
             'targets' => ['required', 'array', 'min:1', 'max:200'],

@@ -18,3 +18,7 @@ tests
 npm-debug.log*
 yarn-error.log*
 README.md
+
+# Runtime uploads must live in a persistent volume, never in a new image.
+storage/app/*
+public/storage

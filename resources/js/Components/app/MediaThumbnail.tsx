@@ -7,11 +7,14 @@ export function MediaThumbnail({
     media,
     className,
 }: {
-    media: Pick<MediaEntity, 'thumbnail_url' | 'type' | 'filename'> | null | undefined;
+    media: Pick<MediaEntity, 'url' | 'thumbnail_url' | 'type' | 'filename'> | null | undefined;
     className?: string;
 }) {
     const isVideo = media?.type?.value === 'video';
     const [failedUrl, setFailedUrl] = useState<string | null>(null);
+    const [failedVideoUrl, setFailedVideoUrl] = useState<string | null>(null);
+    const videoUrl = media?.url;
+    const posterUrl = !isVideo || media?.thumbnail_url !== videoUrl ? media?.thumbnail_url : null;
 
     return (
         <div
@@ -20,13 +23,24 @@ export function MediaThumbnail({
                 className,
             )}
         >
-            {media?.thumbnail_url && failedUrl !== media.thumbnail_url && !isVideo ? (
+            {posterUrl && failedUrl !== posterUrl ? (
                 <img
-                    src={media.thumbnail_url}
-                    alt={media.filename}
+                    src={posterUrl}
+                    alt={media?.filename ?? ''}
                     loading="lazy"
-                    onError={() => setFailedUrl(media.thumbnail_url)}
+                    onError={() => setFailedUrl(posterUrl)}
                     className="size-full object-cover"
+                />
+            ) : isVideo && videoUrl && failedVideoUrl !== videoUrl ? (
+                <video
+                    key={videoUrl}
+                    src={`${videoUrl.split('#')[0]}#t=0.1`}
+                    aria-label={media?.filename}
+                    preload="metadata"
+                    muted
+                    playsInline
+                    onError={() => setFailedVideoUrl(videoUrl)}
+                    className="pointer-events-none size-full object-cover"
                 />
             ) : (
                 <span className="text-faint">

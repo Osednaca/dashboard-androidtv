@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Device;
 
 use App\Domain\Devices\Actions\BuildDeviceManifest;
-use App\Domain\Devices\Actions\VerifyDeviceAdminPin;
 use App\Domain\Devices\Enums\DeviceStatus;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Media\Models\Layout;
@@ -15,16 +14,11 @@ use Illuminate\Support\Facades\DB;
 
 class SettingsController extends Controller
 {
-    public function update(UpdateDeviceSettingsRequest $request, VerifyDeviceAdminPin $verify, BuildDeviceManifest $builder): JsonResponse
+    public function update(UpdateDeviceSettingsRequest $request, BuildDeviceManifest $builder): JsonResponse
     {
-        // Failed PIN attempts must survive a rolled-back settings transaction,
-        // including when Laravel uses the database cache store.
-        $verified = $request->user()->fresh();
-        $verify->handle($verified, $request->validated('pin'));
-        $manifest = DB::transaction(function () use ($request, $verified, $builder) {
+        $manifest = DB::transaction(function () use ($request, $builder) {
             $device = Device::query()->lockForUpdate()->findOrFail($request->user()->id);
             abort_if($device->status === DeviceStatus::Disabled, 403);
-            abort_unless(hash_equals($verified->admin_pin_hash, $device->admin_pin_hash ?? ''), 409, 'El PIN cambió. Valida nuevamente.');
             $settings = $request->validated('settings');
             $current = $device->currentLayout ?? Layout::query()->where('is_default', true)->first();
             $configuration = $current?->configuration ?? [];
