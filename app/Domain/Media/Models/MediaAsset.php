@@ -78,11 +78,18 @@ class MediaAsset extends Model
 
     public function getUrlAttribute(): string
     {
+        if ($this->type === MediaType::LiveStream) {
+            return $this->metadata['live']['original_url'];
+        }
+
         return Storage::disk(config('signage.media_disk'))->url($this->storage_path);
     }
 
     public function getThumbnailUrlAttribute(): string
     {
+        if ($this->type === MediaType::LiveStream) {
+            return '';
+        }
         $path = $this->thumbnail_path ?: $this->storage_path;
 
         return Storage::disk(config('signage.media_disk'))->url($path);
@@ -121,6 +128,11 @@ class MediaAsset extends Model
      */
     public function isLockedByActiveCampaign(): bool
     {
+        if (CampaignCreative::query()->where('configuration->fallback_media_id', $this->id)
+            ->whereHas('campaign', fn (Builder $q) => $q->whereIn('status', ['active', 'scheduled']))->exists()) {
+            return true;
+        }
+
         return $this->campaignCreatives()
             ->whereHas('campaign', fn (Builder $q) => $q->where('status', 'active'))
             ->exists();

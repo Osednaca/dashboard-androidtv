@@ -26,7 +26,7 @@ class MediaController extends Controller
 
         $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
-            'type' => ['nullable', 'in:image,video'],
+            'type' => ['nullable', 'in:image,video,live_stream'],
             'processing_status' => ['nullable', 'string'],
         ]);
 

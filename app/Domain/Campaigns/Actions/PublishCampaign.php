@@ -23,6 +23,7 @@ class PublishCampaign
     public function handle(Campaign $campaign): Campaign
     {
         $campaign->load(['creatives', 'targets']);
+        app(ValidateLiveCampaign::class)->handle($campaign);
 
         if ($campaign->creatives->isEmpty()) {
             $this->alerts->handle(

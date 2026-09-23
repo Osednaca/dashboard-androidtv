@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'campaign_id', 'media_asset_id', 'duration', 'weight', 'position', 'status',
+    'campaign_id', 'media_asset_id', 'duration', 'weight', 'position', 'status', 'configuration',
 ])]
 class CampaignCreative extends Model
 {
     protected function casts(): array
     {
         return [
+            'configuration' => 'array',
             'status' => CreativeStatus::class,
             'duration' => 'integer',
             'weight' => 'integer',

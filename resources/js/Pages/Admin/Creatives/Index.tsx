@@ -1,4 +1,6 @@
 import { UploadDropzone } from '@/Components/app/UploadDropzone';
+import { LiveStreamDialog } from '@/Components/app/LiveStreamDialog';
+import { usePermissions } from '@/Hooks/usePermissions';
 import { Head, router } from '@inertiajs/react';
 import { Grid2X2, Image as ImageIcon, List, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -29,6 +31,7 @@ export default function CreativesIndex({
     options: { types: Option[]; statuses: Option[]; advertisers: Array<{ id: number; name: string }> };
 }) {
     const [view, setView] = useState<'grid' | 'list'>('grid');
+    const { can } = usePermissions();
     const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState<MediaEntity | null>(null);
 
@@ -84,6 +87,7 @@ export default function CreativesIndex({
                 description="Biblioteca de imágenes y videos para las campañas."
                 actions={
                     <>
+                        {can('creatives.manage') ? <LiveStreamDialog onCreated={() => router.reload({only: ['assets']})} /> : null}
                         <div className="flex overflow-hidden rounded-control border border-line">
                             <button
                                 type="button"

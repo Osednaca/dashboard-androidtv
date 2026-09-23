@@ -8,15 +8,20 @@ export interface TargetInput {
     is_exclusion: boolean;
 }
 
+export interface LiveConfiguration {
+    [key: string]: string | number | boolean | null | undefined;
+    display_mode: string; audio: boolean; starts_at: string; ends_at: string; fallback_media_id: number | null; size_acknowledged: boolean;
+}
 export interface CreativeInput {
-    [key: string]: string | number | undefined;
+    [key: string]: string | number | undefined | LiveConfiguration | null;
+    configuration?: LiveConfiguration | null;
     media_asset_id: number | '';
     duration: number;
     weight: number;
 }
 
 export interface FormCampaign extends Omit<CampaignEntity, 'creatives_count'> {
-    creatives?: Array<{ media_asset_id: number; duration: number; weight: number }>;
+    creatives?: Array<{ media_asset_id: number; duration: number; weight: number; configuration?: LiveConfiguration | null }>;
     targets?: Array<{ target_type: string; target_id: number | null; target_value: string | null; is_exclusion: boolean }>;
 }
 

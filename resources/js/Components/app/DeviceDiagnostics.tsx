@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { formatBytes, formatDateTime } from '@/Utils/format';
 
 export interface DeviceDiagnosticsData {
+    current_content_type?: string;
+    live_provider?: string;
+    stream_state?: string;
     sync_error?: string | null;
     last_sync_at?: number | null;
     business_images_expected?: number | null;
@@ -21,6 +24,7 @@ export function describeDeviceError(code: string): string {
         LOCAL_ASSET_CORRUPT_OR_MISSING: 'El archivo local falta o está dañado. Sincroniza el TV.',
         VIDEO_PLAYBACK_ERROR: 'No se pudo reproducir el video.',
         VIDEO_STALLED: 'El video dejó de avanzar.',
+        LIVE_STREAM_FAILED: 'El directo no está disponible. El TV usa respaldo y reintenta automáticamente.',
         IMAGE_DECODE_ERROR: 'El TV no pudo abrir la imagen.',
         MEDIA_LOAD_TIMEOUT: 'El contenido tardó demasiado en cargar.',
         PROCESS_INTERRUPTED: 'La app se cerró durante la reproducción.',
@@ -41,6 +45,7 @@ export function DeviceDiagnostics({ diagnostics, recordedAt }: { diagnostics?: D
             <CardContent className="space-y-3 text-sm">
                 {!diagnostics ? <p className="text-muted">Sin diagnóstico local recibido. Instala la app 0.1.9 o posterior y espera su próxima conexión.</p> : <>
                     <p className="text-muted">Último reporte: {formatDateTime(recordedAt ?? null)}. Sin Internet, el reporte se actualiza cuando el TV vuelve a conectarse.</p>
+                    {diagnostics.current_content_type === 'live_stream' ? <p>Directo · {diagnostics.live_provider?.toUpperCase()} · {({live:'En vivo', connecting:'Conectando', buffering:'Cargando', offline:'Sin conexión', failed:'Usando respaldo', ended:'Finalizado', unverified:'Reproductor sin confirmación', scheduled:'Programado'} as Record<string,string>)[diagnostics.stream_state ?? ''] ?? diagnostics.stream_state}</p> : null}
                     {diagnostics.sync_error ? <div role="alert" className="space-y-2 rounded-control border border-danger p-3">
                         <Badge tone="danger">{diagnostics.sync_error}</Badge>
                         <p>{describeDeviceError(diagnostics.sync_error)}</p>

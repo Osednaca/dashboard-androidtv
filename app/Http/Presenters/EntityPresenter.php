@@ -11,6 +11,7 @@ use App\Domain\Devices\Models\DeviceActivation;
 use App\Domain\Devices\Models\DeviceCommand;
 use App\Domain\Locations\Models\Location;
 use App\Domain\Media\Models\MediaAsset;
+use App\Domain\Media\Services\LiveSourcePayload;
 use App\Domain\Operations\Models\Alert;
 use App\Domain\Operations\Models\AuditLog;
 use App\Domain\Playlists\Models\Playlist;
@@ -281,6 +282,7 @@ class EntityPresenter
     public static function mediaAsset(MediaAsset $asset): array
     {
         return [
+            'live' => app(LiveSourcePayload::class)->forAsset($asset),
             'id' => $asset->id,
             'filename' => $asset->filename,
             'type' => self::enum($asset->type),

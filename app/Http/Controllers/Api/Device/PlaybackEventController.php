@@ -26,6 +26,12 @@ class PlaybackEventController extends Controller
             'events.*.completed' => ['boolean'],
             'events.*.error_code' => ['nullable', 'string', 'max:40'],
             'events.*.manifest_version' => ['nullable', 'integer'],
+            'events.*.metadata' => ['nullable', 'array:event,started_event,provider,live_source_id,verified'],
+            'events.*.metadata.started_event' => ['nullable', 'in:stream_started,fallback_started'],
+            'events.*.metadata.event' => ['required_with:events.*.metadata', 'in:stream_started,stream_completed,stream_failed,fallback_started,fallback_completed'],
+            'events.*.metadata.provider' => ['required_with:events.*.metadata', 'in:hls,youtube,twitch,kick'],
+            'events.*.metadata.live_source_id' => ['required_with:events.*.metadata', 'integer'],
+            'events.*.metadata.verified' => ['boolean'],
         ]);
 
         /** @var Device $device */

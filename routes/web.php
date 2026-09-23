@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\LiveEmbedController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('live/embed/{media}', [LiveEmbedController::class, 'show'])->middleware('signed')->name('live.embed');
+Route::get('live/preview', [LiveEmbedController::class, 'preview'])->middleware('signed')->name('live.preview');
 
 Route::get('/', function () {
     $user = auth()->user();

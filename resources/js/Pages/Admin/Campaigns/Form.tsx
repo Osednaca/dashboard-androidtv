@@ -14,6 +14,9 @@ import {
 import { useEffect, useState } from 'react';
 import { FormField } from '@/Components/app/FormField';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
+import { LiveStreamDialog } from '@/Components/app/LiveStreamDialog';
+import { LiveCampaignFields } from '@/Components/app/LiveCampaignFields';
+import { usePermissions } from '@/Hooks/usePermissions';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -67,6 +70,9 @@ const weekDays = [
 ];
 
 export default function CampaignForm({ campaign, options }: { campaign: FormCampaign | null; options: Options }) {
+    const { can } = usePermissions();
+    const [addedSources, setAddedSources] = useState<MediaEntity[]>([]);
+    const creativeOptions = [...addedSources, ...options.creatives];
     const [step, setStep] = useState(0);
     const [summary, setSummary] = useState<{ screens: number; businesses: number; locations: number; cities: number } | null>(
         campaign ? { screens: campaign.target_screen_count, businesses: 0, locations: 0, cities: 0 } : null,
@@ -78,7 +84,8 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
 
     const addCreative = (media: MediaEntity) => {
         if (data.creatives.some((creative) => creative.media_asset_id === media.id)) return;
-        setData('creatives', [...data.creatives, { media_asset_id: media.id, duration: media.duration ?? 10, weight: 10 }]);
+        setData('creatives', [...data.creatives, { media_asset_id: media.id, duration: media.duration ?? 10, weight: 10,
+            ...(media.type.value === 'live_stream' ? {configuration: {display_mode: 'advertising_zone', audio: false, starts_at: '', ends_at: '', fallback_media_id: null, size_acknowledged: false}} : {}) }]);
     };
 
     const removeCreative = (id: number | '') => {
@@ -236,14 +243,14 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                 ) : (
                                     <div className="space-y-2">
                                         {data.creatives.map((creative, index) => {
-                                            const media = options.creatives.find((item) => item.id === creative.media_asset_id);
+                                            const media = creativeOptions.find((item) => item.id === creative.media_asset_id);
                                             return (
                                                 <div key={String(creative.media_asset_id)} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 rounded-control border border-line bg-surface p-2 sm:grid-cols-[96px_minmax(0,1fr)_auto]">
                                                     <MediaThumbnail media={media} className="col-span-2 w-24 sm:col-span-1" />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-xs text-fg">{media?.filename ?? '—'}</p>
                                                         {(errors as Record<string, string>)[`creatives.${index}.duration`] && <p className="text-xs text-danger">{(errors as Record<string, string>)[`creatives.${index}.duration`]}</p>}
-                                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                        {media?.live ? <p className="mt-1 text-xs text-muted">Se reproduce durante el horario del evento.</p> : <div className="mt-1 flex flex-wrap items-center gap-2">
                                                             <label className="flex items-center gap-1 text-[11px] text-faint">
                                                                 Duración
                                                                 <Input
@@ -267,11 +274,12 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                                                     className="h-7 w-16 px-2 text-xs"
                                                                 />
                                                             </label>
-                                                        </div>
+                                                        </div>}
                                                     </div>
                                                     <Button variant="ghost" size="icon-sm" aria-label="Quitar creatividad" onClick={() => removeCreative(creative.media_asset_id)}>
                                                         <Trash2 className="size-3.5 text-danger" />
                                                     </Button>
+                                                    {media?.live && creative.configuration ? <LiveCampaignFields media={media} value={creative.configuration} assets={creativeOptions} onChange={configuration => updateCreative(creative.media_asset_id, {configuration})} /> : null}
                                                 </div>
                                             );
                                         })}
@@ -281,11 +289,12 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
 
                             <div>
                                 <p className="mb-2 text-xs text-muted">Biblioteca de creatividades</p>
-                                {options.creatives.length === 0 ? (
+                                {can('creatives.manage') ? <LiveStreamDialog onCreated={media => {setAddedSources(list => [...list, media]); addCreative(media);}} /> : null}
+                                {creativeOptions.length === 0 ? (
                                     <p className="text-xs text-faint">Sube creatividades desde el módulo de creatividades.</p>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                                        {options.creatives.map((media) => {
+                                        {creativeOptions.map((media) => {
                                             const selected = data.creatives.some((creative) => creative.media_asset_id === media.id);
                                             return (
                                                 <button

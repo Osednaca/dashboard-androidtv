@@ -6,6 +6,7 @@ use App\Domain\Businesses\Models\Business;
 use App\Domain\Devices\Actions\IssueDeviceCommand;
 use App\Domain\Devices\Enums\DeviceCommandType;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Media\Enums\MediaType;
 use App\Domain\Media\Enums\ProcessingStatus;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\QuickPlay\Enums\QuickPlayDeviceStatus;
@@ -40,6 +41,9 @@ class StartQuickPlay
         array $targetIds = [],
         ?Business $business = null,
     ): QuickPlay {
+        if ($media->type === MediaType::LiveStream) {
+            throw ValidationException::withMessages(['media_asset_id' => 'Programa el directo desde una campaña.']);
+        }
         if ($business !== null && $displayMode !== QuickPlayDisplayMode::Business) {
             throw ValidationException::withMessages(['display_mode' => 'El Instant Play del negocio solo puede reproducirse en la zona del negocio.']);
         }

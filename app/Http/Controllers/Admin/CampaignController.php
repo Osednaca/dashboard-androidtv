@@ -22,6 +22,7 @@ use App\Http\Requests\Admin\CampaignRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -170,6 +171,7 @@ class CampaignController extends Controller
                 ...EntityPresenter::campaign($campaign),
                 'creatives' => $campaign->creatives->map(fn ($c) => [
                     'media_asset_id' => $c->media_asset_id,
+                    'configuration' => $c->configuration,
                     'duration' => $c->duration,
                     'weight' => $c->weight,
                 ]),
@@ -317,6 +319,11 @@ class CampaignController extends Controller
         foreach (array_values($creatives) as $index => $creative) {
             $campaign->creatives()->create([
                 'media_asset_id' => $creative['media_asset_id'],
+                'configuration' => empty($creative['configuration']) ? null : [
+                    ...$creative['configuration'],
+                    'starts_at' => Carbon::parse($creative['configuration']['starts_at'])->toIso8601String(),
+                    'ends_at' => Carbon::parse($creative['configuration']['ends_at'])->toIso8601String(),
+                ],
                 'duration' => $creative['duration'],
                 'weight' => $creative['weight'],
                 'position' => $index,

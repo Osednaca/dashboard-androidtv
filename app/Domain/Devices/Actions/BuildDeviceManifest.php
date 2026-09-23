@@ -9,6 +9,8 @@ use App\Domain\Devices\Enums\ManifestStatus;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Devices\Models\DeviceManifest;
 use App\Domain\Media\Models\Layout;
+use App\Domain\Media\Models\MediaAsset;
+use App\Domain\Media\Services\LiveSourcePayload;
 use App\Domain\Playlists\Models\Playlist;
 use App\Domain\Scheduling\Services\ResolveActivePlaylist;
 use Illuminate\Support\Collection;
@@ -53,6 +55,7 @@ class BuildDeviceManifest
             ->merge($activePlaylist?->items->pluck('mediaAsset') ?? collect())
             ->merge(collect($scheduledPlaylists)->flatMap(fn (Playlist $playlist) => $playlist->items->pluck('mediaAsset')))
             ->merge($campaigns->flatMap(fn (Campaign $c) => $c->creatives->pluck('mediaAsset')))
+            ->merge(MediaAsset::query()->whereIn('id', $campaigns->flatMap(fn ($c) => $c->creatives->map(fn ($creative) => $creative->configuration['fallback_media_id'] ?? null))->filter())->get())
             ->filter()
             ->unique('id')
             ->values();
@@ -90,6 +93,8 @@ class BuildDeviceManifest
                     'id' => $c->id,
                     'name' => $c->name,
                     'priority' => $c->priority,
+                    'starts_on' => $c->starts_at?->toDateString(),
+                    'ends_on' => $c->ends_at?->toDateString(),
                     'daily_start_time' => $c->daily_start_time,
                     'daily_end_time' => $c->daily_end_time,
                     'days_of_week' => $c->days_of_week,
@@ -98,6 +103,7 @@ class BuildDeviceManifest
                         'media_asset_id' => $creative->media_asset_id,
                         'duration' => $creative->duration,
                         'weight' => $creative->weight,
+                        'live_configuration' => $creative->configuration,
                     ])->values(),
                 ])->values(),
             ],
@@ -120,6 +126,7 @@ class BuildDeviceManifest
                 'mime_type' => $asset->mime_type,
                 'duration' => $asset->duration,
                 'filesize' => $asset->filesize,
+                'live' => app(LiveSourcePayload::class)->forAsset($asset),
             ])->values(),
             'configuration' => [
                 'timezone' => $this->activePlaylist->timezoneFor($device),
@@ -158,8 +165,8 @@ class BuildDeviceManifest
     protected function activeCampaigns(Device $device): Collection
     {
         return Campaign::query()
-            ->where('status', CampaignStatus::Active->value)
-            ->where(fn ($q) => $q->whereNull('starts_at')->orWhereDate('starts_at', '<=', today()))
+            ->whereIn('status', [CampaignStatus::Active->value, CampaignStatus::Scheduled->value])
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhereDate('starts_at', '<=', today())->orWhereHas('creatives.mediaAsset', fn ($a) => $a->where('type', 'live_stream')))
             ->where(fn ($q) => $q->whereNull('ends_at')->orWhereDate('ends_at', '>=', today()))
             ->with(['creatives' => fn ($q) => $q->where('status', 'active')->orderBy('position')->orderBy('id'), 'creatives.mediaAsset'])
             ->orderBy('id')

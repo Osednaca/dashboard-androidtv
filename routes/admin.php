@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\BusinessController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeviceController;
+use App\Http\Controllers\Admin\LiveStreamController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\QuickPlayController;
@@ -76,6 +77,8 @@ Route::post('campaigns/{campaign}/archive', [CampaignController::class, 'archive
 Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->middleware('permission:campaigns.delete')->name('campaigns.destroy');
 
 // Creatives / media library
+Route::post('live-streams/detect', [LiveStreamController::class, 'detect'])->middleware(['permission:creatives.manage', 'throttle:60,1']);
+Route::post('live-streams', [LiveStreamController::class, 'store'])->middleware('permission:creatives.manage');
 Route::get('creatives', [MediaController::class, 'index'])->middleware('permission:creatives.view')->name('creatives.index');
 Route::post('creatives', [MediaController::class, 'store'])->middleware('permission:creatives.manage')->name('creatives.store');
 Route::delete('creatives/{media}', [MediaController::class, 'destroy'])->middleware('permission:creatives.manage')->name('creatives.destroy');

@@ -217,6 +217,7 @@ export interface CampaignEntity {
 }
 
 export interface MediaEntity {
+    live?: import('@/Components/app/LiveStreamDialog').LiveSource | null;
     id: number;
     filename: string;
     type: EnumValue;

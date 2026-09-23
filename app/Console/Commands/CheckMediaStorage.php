@@ -23,7 +23,7 @@ class CheckMediaStorage extends Command
         }
         $missing = 0;
         $checked = 0;
-        foreach (MediaAsset::query()->lazyById(200) as $asset) {
+        foreach (MediaAsset::query()->whereIn('type', ['image', 'video'])->lazyById(200) as $asset) {
             $checked++;
             if (! $disk->exists($asset->storage_path)) {
                 $this->error("Original ausente: archivo #{$asset->id} ({$asset->storage_path})");

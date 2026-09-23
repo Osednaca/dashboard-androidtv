@@ -43,6 +43,7 @@ class IngestPlaybackBatch
             'completed' => (bool) ($event['completed'] ?? false),
             'error_code' => $event['error_code'] ?? null,
             'manifest_version' => isset($event['manifest_version']) ? (int) $event['manifest_version'] : null,
+            'metadata' => isset($event['metadata']) ? json_encode($event['metadata']) : null,
             'created_at' => $now,
         ], $events);
 

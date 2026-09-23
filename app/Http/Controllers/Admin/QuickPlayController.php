@@ -35,7 +35,7 @@ class QuickPlayController extends Controller
 
     protected function mediaQuery(): Builder
     {
-        return MediaAsset::query()->advertising();
+        return MediaAsset::query()->advertising()->whereIn('type', ['image', 'video']);
     }
 
     protected function devicesQuery(): Builder

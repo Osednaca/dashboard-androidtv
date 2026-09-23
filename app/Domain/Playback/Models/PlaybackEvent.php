@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'device_id', 'campaign_id', 'creative_id', 'playlist_id', 'media_asset_id',
     'started_at', 'completed_at', 'duration_played', 'completed', 'error_code',
-    'manifest_version', 'created_at',
+    'manifest_version', 'created_at', 'metadata',
 ])]
 class PlaybackEvent extends Model
 {
@@ -24,6 +24,7 @@ class PlaybackEvent extends Model
     protected function casts(): array
     {
         return [
+            'metadata' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
             'created_at' => 'datetime',

@@ -23,7 +23,7 @@ export function MediaThumbnail({
                 className,
             )}
         >
-            {posterUrl && failedUrl !== posterUrl ? (
+            {media?.type.value === 'live_stream' ? <span className="text-xs font-medium text-accent">EN VIVO</span> : posterUrl && failedUrl !== posterUrl ? (
                 <img
                     src={posterUrl}
                     alt={media?.filename ?? ''}
