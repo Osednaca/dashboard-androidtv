@@ -25,7 +25,8 @@ class QuickPlay extends Model
 
     public function canRetry(): bool
     {
-        return ! $this->trashed() && $this->isTerminal() && $this->failed_count > 0 && empty($this->metadata['retry_id']);
+        return ($this->business_id === null || $this->display_mode === QuickPlayDisplayMode::Business)
+            && ! $this->trashed() && $this->isTerminal() && $this->failed_count > 0 && empty($this->metadata['retry_id']);
     }
 
     protected function casts(): array

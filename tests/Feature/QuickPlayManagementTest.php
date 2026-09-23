@@ -16,6 +16,7 @@ use App\Domain\QuickPlay\Enums\QuickPlayScope;
 use App\Domain\QuickPlay\Models\QuickPlay;
 use App\Domain\Users\Enums\RoleEnum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\Concerns\CreatesUsers;
 use Tests\TestCase;
 
@@ -28,7 +29,7 @@ class QuickPlayManagementTest extends TestCase
         $user = $business ? $this->businessUser($business) : $this->superAdmin();
         $device = Device::factory()->online()->create($business ? ['business_id' => $business->id] : []);
         $media = MediaAsset::factory()->image()->create($business ? ['owner_type' => $business->getMorphClass(), 'owner_id' => $business->id] : []);
-        $quick = app(StartQuickPlay::class)->handle($user, $media, QuickPlayDisplayMode::Fullscreen,
+        $quick = app(StartQuickPlay::class)->handle($user, $media, $business ? QuickPlayDisplayMode::Business : QuickPlayDisplayMode::Fullscreen,
             QuickPlayScope::Devices, 12, ['device_ids' => [$device->id]], $business);
 
         return [$quick, $device, $media, $user];
@@ -159,6 +160,40 @@ class QuickPlayManagementTest extends TestCase
         $this->delete('/business/quick-play/'.$quick->id)->assertNotFound();
         $this->assertDatabaseCount('quick_plays', 1);
         $this->assertNotNull($quick->fresh());
+    }
+
+    public function test_business_cannot_retry_legacy_advertising_or_fullscreen_deliveries(): void
+    {
+        [$quick, , , $user] = $this->delivery(Business::factory()->create());
+        $this->markFailed($quick);
+        $this->actingAs($user);
+        foreach ([QuickPlayDisplayMode::Advertising, QuickPlayDisplayMode::Fullscreen] as $mode) {
+            $quick->update(['display_mode' => $mode]);
+            $this->get('/business/quick-play/'.$quick->id)->assertInertia(fn ($page) => $page->where('quickPlay.can_retry', false));
+            $this->post('/business/quick-play/'.$quick->id.'/retry')->assertSessionHasErrors('quick_play');
+        }
+        $this->assertDatabaseCount('quick_plays', 1);
+        $this->assertDatabaseCount('device_commands', 1);
+    }
+
+    public function test_business_dispatch_rejects_forbidden_modes_and_scopes_outside_the_form(): void
+    {
+        $business = Business::factory()->create();
+        [$quick, $device, $media, $user] = $this->delivery($business);
+        foreach ([
+            [QuickPlayDisplayMode::Advertising, QuickPlayScope::Devices, 'display_mode'],
+            [QuickPlayDisplayMode::Fullscreen, QuickPlayScope::Devices, 'display_mode'],
+            [QuickPlayDisplayMode::Business, QuickPlayScope::All, 'scope'],
+        ] as [$mode, $scope, $error]) {
+            try {
+                app(StartQuickPlay::class)->handle($user, $media, $mode, $scope, 10, ['device_ids' => [$device->id]], $business);
+                $this->fail('Business dispatch must reject forbidden modes and scopes.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey($error, $exception->errors());
+            }
+        }
+        $this->assertDatabaseCount('quick_plays', 1);
+        $this->assertDatabaseCount('device_commands', 1);
     }
 
     public function test_retry_never_follows_a_device_transferred_out_of_the_business(): void

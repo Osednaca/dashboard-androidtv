@@ -43,6 +43,20 @@ class QuickPlayController extends \App\Http\Controllers\Admin\QuickPlayControlle
         return parent::locationsQuery()->where('business_id', $this->businessId());
     }
 
+    protected function options(): array
+    {
+        $options = parent::options();
+        $mode = QuickPlayDisplayMode::Business;
+        $options['displayModes'] = [['value' => $mode->value, 'label' => $mode->label(), 'description' => $mode->description()]];
+        $options['scopes'] = [['value' => QuickPlayScope::Devices->value, 'label' => 'Mis pantallas']];
+        $options['businesses'] = [];
+        $options['locations'] = [];
+        $options['counts']['businesses'] = 0;
+        $options['counts']['locations'] = 0;
+
+        return $options;
+    }
+
     public function send(StartBusinessQuickPlayRequest $request, StartQuickPlay $start, RecordAudit $audit): RedirectResponse
     {
         $media = $this->mediaQuery()->ready()->findOrFail($request->integer('media_asset_id'));
@@ -51,7 +65,7 @@ class QuickPlayController extends \App\Http\Controllers\Admin\QuickPlayControlle
             QuickPlayDisplayMode::from($request->validated('display_mode')),
             QuickPlayScope::from($request->validated('scope')),
             $request->filled('duration') ? $request->integer('duration') : null,
-            $request->safe()->only(['device_ids', 'business_ids', 'location_ids']),
+            $request->safe()->only(['device_ids']),
             $this->business(),
         );
         $audit->handle('business.quick_play.sent', $quickPlay, [], [

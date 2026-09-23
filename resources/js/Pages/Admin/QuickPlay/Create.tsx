@@ -229,7 +229,9 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                             </span>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <Tabs value={data.scope} onValueChange={(value) => setData('scope', value)}>
+                            {portal === 'business' ? (
+                                <p className="text-sm text-muted">Selecciona las pantallas de tu negocio donde quieres reproducir el contenido.</p>
+                            ) : <Tabs value={data.scope} onValueChange={(value) => setData('scope', value)}>
                                 <TabsList className="grid w-full grid-cols-2 sm:flex">
                                     {options.scopes.map((scope) => (
                                         <TabsTrigger key={scope.value} value={scope.value} className="min-w-0 flex-1 justify-center whitespace-normal text-center">
@@ -237,7 +239,7 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                                         </TabsTrigger>
                                     ))}
                                 </TabsList>
-                            </Tabs>
+                            </Tabs>}
 
                             {data.scope === 'devices' ? (
                                 <div className="space-y-2">
@@ -246,7 +248,7 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                                         <Input
                                             value={deviceSearch}
                                             onChange={(event) => setDeviceSearch(event.target.value)}
-                                            placeholder="Buscar pantalla, negocio o ciudad…"
+                                            placeholder={portal === 'business' ? 'Buscar pantalla o ciudad…' : 'Buscar pantalla, negocio o ciudad…'}
                                             className="pl-9"
                                         />
                                     </div>
@@ -296,6 +298,8 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                             ) : null}
 
                             {targetError ? <p className="text-xs text-danger">{targetError}</p> : null}
+                            {errors.device_ids ? <p className="text-xs text-danger">{errors.device_ids}</p> : null}
+                            {errors.scope ? <p className="text-xs text-danger">{errors.scope}</p> : null}
                         </CardContent>
                     </Card>
 
@@ -304,8 +308,14 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                         <CardHeader>
                             <CardTitle>3 · Modo de visualización</CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            {options.displayModes.map((mode) => {
+                        <CardContent className={portal === 'business' ? 'space-y-2' : 'grid grid-cols-1 gap-3 sm:grid-cols-3'}>
+                            {portal === 'business' ? (
+                                <div className="rounded-control border border-accent/60 bg-accent/10 p-3">
+                                    <MonitorPlay className="mb-2 size-4 text-accent" />
+                                    <p className="text-xs font-medium text-fg">Zona del negocio</p>
+                                    <p className="mt-1 text-xs text-muted">El contenido se reproduce dentro del espacio de tu negocio en el layout de la pantalla.</p>
+                                </div>
+                            ) : options.displayModes.map((mode) => {
                                 const Icon = modeIcons[mode.value] ?? Layers;
                                 const selected = data.display_mode === mode.value;
                                 return (
@@ -324,6 +334,7 @@ export default function QuickPlayCreate({ options, portal = 'admin' }: { options
                                     </button>
                                 );
                             })}
+                            {errors.display_mode ? <p className="text-xs text-danger">{errors.display_mode}</p> : null}
                         </CardContent>
                     </Card>
 

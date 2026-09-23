@@ -40,6 +40,12 @@ class StartQuickPlay
         array $targetIds = [],
         ?Business $business = null,
     ): QuickPlay {
+        if ($business !== null && $displayMode !== QuickPlayDisplayMode::Business) {
+            throw ValidationException::withMessages(['display_mode' => 'El Instant Play del negocio solo puede reproducirse en la zona del negocio.']);
+        }
+        if ($business !== null && $scope !== QuickPlayScope::Devices) {
+            throw ValidationException::withMessages(['scope' => 'Selecciona las pantallas de tu negocio.']);
+        }
         if ($media->processing_status !== ProcessingStatus::Ready || ($business !== null &&
             ($media->owner_type !== $business->getMorphClass() || (int) $media->owner_id !== $business->id))) {
             throw ValidationException::withMessages(['media_asset_id' => 'Selecciona un archivo disponible de tu biblioteca.']);

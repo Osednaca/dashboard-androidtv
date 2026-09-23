@@ -40,7 +40,8 @@ class StartQuickPlayRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $scope = QuickPlayScope::tryFrom((string) $this->input('scope'));
+            $scopeValue = $this->input('scope');
+            $scope = is_string($scopeValue) ? QuickPlayScope::tryFrom($scopeValue) : null;
 
             $required = match ($scope) {
                 QuickPlayScope::Devices => 'device_ids',
