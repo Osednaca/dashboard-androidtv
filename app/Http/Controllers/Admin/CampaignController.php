@@ -163,7 +163,7 @@ class CampaignController extends Controller
     {
         $this->authorize('update', $campaign);
 
-        $campaign->load(['creatives', 'targets']);
+        $campaign->load(['advertiser', 'creatives' => fn ($query) => $query->orderBy('position')->orderBy('id'), 'targets']);
 
         return Inertia::render('Admin/Campaigns/Form', [
             'campaign' => [

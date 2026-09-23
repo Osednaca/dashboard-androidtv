@@ -21,29 +21,10 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { Input, Textarea } from '@/Components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { AdminLayout } from '@/Layouts/AdminLayout';
-import type { CampaignEntity, MediaEntity, Option } from '@/Types';
+import type { MediaEntity, Option } from '@/Types';
+import { initialCampaignValues, type CreativeInput, type FormCampaign, type TargetInput } from '@/Utils/campaignForm';
 import { formatNumber } from '@/Utils/format';
 import { cn } from '@/Utils/cn';
-
-interface TargetInput {
-    [key: string]: string | number | boolean;
-    target_type: string;
-    target_id: number | '';
-    target_value: string;
-    is_exclusion: boolean;
-}
-
-interface CreativeInput {
-    [key: string]: string | number | undefined;
-    media_asset_id: number | '';
-    duration: number;
-    weight: number;
-}
-
-interface FormCampaign extends Omit<CampaignEntity, 'creatives_count'> {
-    creatives?: Array<{ media_asset_id: number; duration: number; weight: number }>;
-    targets?: Array<{ target_type: string; target_id: number | null; target_value: string | null; is_exclusion: boolean }>;
-}
 
 interface Options {
     advertisers: Array<{ id: number; name: string; status: { value: string; label: string } }>;
@@ -91,27 +72,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
         campaign ? { screens: campaign.target_screen_count, businesses: 0, locations: 0, cities: 0 } : null,
     );
 
-    const form = useForm({
-        advertiser_id: campaign?.advertiser ? String(campaign.advertiser.id) : '',
-        name: campaign?.name ?? '',
-        description: campaign?.description ?? '',
-        starts_at: campaign?.starts_at ?? new Date().toISOString().slice(0, 10),
-        ends_at: campaign?.ends_at ?? new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-        daily_start_time: campaign?.daily_start_time?.slice(0, 5) ?? '07:00',
-        daily_end_time: campaign?.daily_end_time?.slice(0, 5) ?? '22:00',
-        days_of_week: campaign?.days_of_week ?? [1, 2, 3, 4, 5, 6],
-        priority: campaign?.priority ?? 5,
-        playback_goal: campaign?.playback_goal ?? null,
-        budget: campaign?.budget ?? '',
-        publish: false,
-        creatives: (campaign?.creatives ?? []) as CreativeInput[],
-        targets: (campaign?.targets ?? []).map((target) => ({
-            target_type: target.target_type,
-            target_id: target.target_id ?? '',
-            target_value: target.target_value ?? '',
-            is_exclusion: target.is_exclusion,
-        })) as TargetInput[],
-    });
+    const form = useForm(initialCampaignValues(campaign));
 
     const { data, setData, errors } = form;
 
@@ -375,7 +336,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                             <FormField label="Hora de fin diaria" error={errors.daily_end_time}>
                                 <Input type="time" value={data.daily_end_time} onChange={(e) => setData('daily_end_time', e.target.value)} />
                             </FormField>
-                            <FormField label="Días de la semana" className="sm:col-span-2">
+                            <FormField label="Días de la semana" className="sm:col-span-2" hint="Sin días seleccionados, la campaña se reproduce todos los días.">
                                 <div className="flex flex-wrap gap-1.5">
                                     {weekDays.map((day) => {
                                         const active = data.days_of_week.includes(day.value);
@@ -413,6 +374,14 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
                                     min={0}
                                     value={data.playback_goal ?? ''}
                                     onChange={(e) => setData('playback_goal', e.target.value ? Number(e.target.value) : null)}
+                                />
+                            </FormField>
+                            <FormField label="Meta de impresiones" error={errors.impressions_goal} hint="Opcional.">
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    value={data.impressions_goal ?? ''}
+                                    onChange={(e) => setData('impressions_goal', e.target.value ? Number(e.target.value) : null)}
                                 />
                             </FormField>
                             <FormField label="Presupuesto (COP)" error={errors.budget}>
