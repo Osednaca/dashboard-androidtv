@@ -173,7 +173,12 @@ class CampaignController extends Controller
                     'duration' => $c->duration,
                     'weight' => $c->weight,
                 ]),
-                'targets' => $campaign->targets->map(fn ($t) => EntityPresenter::campaignTarget($t)),
+                'targets' => $campaign->targets->map(fn (CampaignTarget $target) => [
+                    'target_type' => $target->target_type->value,
+                    'target_id' => $target->target_id,
+                    'target_value' => $target->target_value,
+                    'is_exclusion' => $target->is_exclusion,
+                ]),
             ],
             'options' => $this->wizardOptions(),
         ]);

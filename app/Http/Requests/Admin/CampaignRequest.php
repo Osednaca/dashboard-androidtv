@@ -43,7 +43,8 @@ class CampaignRequest extends FormRequest
             'creatives.*.weight' => ['required', 'integer', 'between:1,100'],
 
             'targets' => ['required', 'array', 'min:1', 'max:200'],
-            'targets.*.target_type' => ['required', Rule::enum(CampaignTargetType::class)],
+            'targets.*' => ['required', 'array'],
+            'targets.*.target_type' => ['bail', 'required', 'string', Rule::enum(CampaignTargetType::class)],
             'targets.*.target_id' => ['nullable', 'integer'],
             'targets.*.target_value' => ['nullable', 'string', 'max:160'],
             'targets.*.is_exclusion' => ['boolean'],
@@ -53,6 +54,11 @@ class CampaignRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            // After callbacks also run when the input failed the structural rules.
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
             foreach ($this->input('targets', []) as $index => $target) {
                 $type = CampaignTargetType::tryFrom($target['target_type'] ?? '');
 
