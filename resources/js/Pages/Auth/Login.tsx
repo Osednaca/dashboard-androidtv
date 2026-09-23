@@ -41,7 +41,7 @@ export default function Login({ status }: { status?: string }) {
                     </div>
 
                     <div className="space-y-4">
-                        <p className="metric text-5xl font-semibold leading-none text-fg">124</p>
+                        <p className="metric text-5xl font-semibold leading-none text-fg"></p>
                         <p className="max-w-xs text-sm text-muted">
                             Pantallas activas reportando en tiempo real en restaurantes, gimnasios,
                             clínicas y comercios.
@@ -88,7 +88,7 @@ export default function Login({ status }: { status?: string }) {
                                     autoFocus
                                     onChange={(event) => setData('email', event.target.value)}
                                     className="pl-9"
-                                    placeholder="admin@signagetv.co"
+                                    placeholder="Ingrese su correo electrónico"
                                 />
                             </div>
                             {errors.email ? <p className="text-xs text-danger">{errors.email}</p> : null}
@@ -102,10 +102,9 @@ export default function Login({ status }: { status?: string }) {
                                     id="password"
                                     type="password"
                                     value={data.password}
-                                    autoComplete="current-password"
                                     onChange={(event) => setData('password', event.target.value)}
                                     className="pl-9"
-                                    placeholder="••••••••"
+                                    placeholder="Ingrese su contraseña"
                                 />
                             </div>
                             {errors.password ? <p className="text-xs text-danger">{errors.password}</p> : null}
@@ -126,11 +125,6 @@ export default function Login({ status }: { status?: string }) {
                             Entrar al panel
                         </Button>
                     </form>
-
-                    <p className="mt-6 rounded-control border border-line bg-surface px-3 py-2 text-[11px] text-faint">
-                        Demo: <span className="text-muted">admin@signagetv.co</span> · contraseña{' '}
-                        <span className="text-muted">password</span>
-                    </p>
                 </div>
             </div>
         </div>
