@@ -1,0 +1,38 @@
+# Alter web branding and business simplification
+
+## Objective and authorization
+User requests removing Contenido and Reportes from the business menu; removing business settings sections for audio/notifications, brand and timezone; replacing Signage TV presentation with Alter and the supplied D:/Desktop/logo.jpg across the WEB system, including login/footer. Explicit exclusion: do not change the Android application yet.
+
+Local implementation/tests/work-unit commits are authorized by ODD. No remote sessions, production access, environment edits, deployment, push, merge or PR creation. Supplied logo is a brand asset, not an instruction document; copy exact bytes, no redesign or image editing.
+
+## Exploration and decisions
+- Shared BusinessSidebar covers desktop and mobile menus. Remove those two entries only, not their routes/data/permissions.
+- Removing fields alone breaks required timezone validation and resets omitted notification flags. Make profile saves preserve every hidden preference, timezone and business brand field, including null/missing metadata keys. Keep location timezone payload required by existing backend, although no timezone control is displayed there.
+- Keep the global notification bell, admin timezone controls and businesses' stored logos/names untouched. User requested business settings sections, not deleting functionality/history or replacing tenant identity.
+- Presentation branding must be independent of deployed legacy APP_NAME/VITE_APP_NAME: APP_NAME also determines cookies/cache/Redis prefixes. Do not change these technical identities, app bridges/events, hosts, credentials, Android identifiers or real .env values.
+- Use a small shared Alter logo/name component and dedicated web branding configuration/props; server title/favicon and client titles must show Alter even with old technical app names. Include small-screen login. Retain incumbent layout/theme, no wholesale redesign.
+- Change seeded network default and migrate only the exact legacy default Red Signage TV Colombia -> Red Alter Colombia; preserve custom network names. No production reseed/migration execution.
+
+## Route, checks and delivery
+- Delegated direct: mapping crossed4+files; bounded writer per multi-file work unit. Parent owns scope, task record and independent checks.
+- Strict TDD on/off remains unspecified by repository/session. Regression-first for settings/data/branding behavior where feasible; record observed RED/GREEN, never invent configured mode. Existing PHP and frontend runners only, no new dependencies.
+- PHP runner C:/xampp/php/php.exe vendor/bin/phpunit with explicit APP_ENV=testing, DB_CONNECTION=sqlite, DB_DATABASE=:memory:, DB_URL empty, array cache/mail/session, sync queue, null broadcast, verified-nonexistent APP_CONFIG_CACHE. No ambient DB/cache changes.
+- Frontend npm run typecheck, npm run build, node --experimental-strip-types --test tests/Frontend/*.test.mjs; scoped Pint and git diff --check. Verify exact logo copy hashes and residual UI brand references. Visual checks only if a permitted environment is available; prior local-server launch was policy-blocked and must not be bypassed.
+- RDD OFF globally (status verified); disabled/unmanaged, no native review.
+- Git baseline is CLEAN at9b4377f, branch originally feat/business-unified-scheduling. Earlier task document claiming all changes uncommitted is historical, contradicted by current git; do not rewrite its history. New branch feat/alter-web-branding. No unrelated dirty baseline to include.
+- Forecast approximately300–430 authored code/test/doc lines plus exact binary logo. Delivery ask-on-risk; user explicitly chose feature-branch-chain (both work units together on the feature branch), 2026-09-26. Cache this choice for this feature. Local work-unit commits authorized; no PR is authorized. Never code-golf to meet advisory400 lines.
+- Android preservation baseline:95 app/src + domain/src + app/build.gradle.kts files aggregate SHA256 0203CB73E3C611DE19837CBD5D8180AFD1276B41538CB123EE5275E3E357E75D. No Android writes permitted.
+
+## Tasks
+- [ ] T1 — Simplify business menu/settings safely. Delegated writer: BusinessSidebar/Settings form/controller/request + regressions. Remove requested UI, preserve hidden fields on partial contact save (including absent/null metadata), legacy supplied settings requests still behave, location forms unaffected. Observe focused RED/GREEN, typecheck and commit evidence. Rollback: only these menu/settings diffs and corresponding tests, not unified programming or streaming.
+- [ ] T2 — Apply Alter brand throughout web and verify integration. Delegated writer: shared branding/config/logo/layouts/login/title/footer/favicon/default network migration + tests/docs. Exact logo, accessible expanded/collapsed/mobile identity; stale APP_NAME cannot restore visible Signage TV or reset technical prefixes; conditional data migration preserves custom names. Full PHP/frontend/type/build/hash/residual checks and bounded visual evidence or explicit blocked limitation. Record work-unit commit and Android unchanged proof. Rollback: web branding code/assets/config and guarded data migration as coordinated unit, preserving business data and Android.
+
+## Progress and memory
+Exploration complete, no source writes at document creation. Engram discovery exposes no tools; project/session identity unavailable and not invented. Full mirror odd/alter-web-branding/tasks and proactive saves/session-summary remain pending. Local task record is recovery copy; read back updates. Commit ledger empty; running committed authored lines0.
+
+
+## T1 verification before commit
+- Source freeze: requested business menu entries and settings controls removed; location timezone payload preserved. Partial update no longer resets hidden timezone/logo/metadata/preferences, including null/missing values; supplied legacy fields remain supported.
+- Worker observed regression RED7tests/17assertions with6failures (missingtimezone and omittednotificationreset); focused GREEN21tests/92assertions. Parent independently reran same focused suite:21/92 PASS,5.408s; npm run typecheck exit0. Logs artifacts/alter-t1-parent.log and alter-t1-parent-typecheck.log. Scoped Pint3PHPfiles/diff check passed. Browser checks remain unavailable under prior server-launch restriction, not claimed.
+- T1 implementation count203 authored lines including86-line regression. Settings/menu rollback boundary is the five changed implementation/test files; no schema/data migration for T1. About241 lines including initial task record; exact committed count follows git evidence.
+- Chain strategy accepted by user: feature-branch-chain. First local work-unit commit is permitted; no remote PR/push/deployment. RDD disabled/unmanaged. Android untouched. Engram proactive bugfix/preference saves unavailable; this document records the root cause and result.

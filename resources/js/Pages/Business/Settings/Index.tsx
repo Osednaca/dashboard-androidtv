@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Building2, Image as ImageIcon, MapPin, Pencil, Plus, Save, ShieldCheck, Trash2, Users } from 'lucide-react';
+import { Building2, MapPin, Pencil, Plus, Save, ShieldCheck, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/Components/app/ConfirmDialog';
 import { FormField, FormSection } from '@/Components/app/FormField';
@@ -8,7 +8,6 @@ import { StatusBadge } from '@/Components/app/StatusBadge';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Checkbox } from '@/Components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
@@ -40,13 +39,11 @@ export default function BusinessSettings({
     business,
     locations,
     users,
-    preferences,
     locationStatuses,
 }: {
     business: BusinessProfile;
     locations: LocationRow[];
     users: BusinessUserRow[];
-    preferences: { audio_volume: number; notify_email: boolean; notify_offline: boolean };
     locationStatuses: Array<{ value: string; label: string }>;
 }) {
     const { can } = usePermissions();
@@ -54,14 +51,9 @@ export default function BusinessSettings({
 
     const profileForm = useForm({
         name: business.name,
-        timezone: business.timezone,
         contact_name: business.contact_name ?? '',
         contact_email: business.contact_email ?? '',
         contact_phone: business.contact_phone ?? '',
-        audio_volume: preferences.audio_volume,
-        notify_email: preferences.notify_email,
-        notify_offline: preferences.notify_offline,
-        logo: null as File | null,
     });
 
     const [locationOpen, setLocationOpen] = useState(false);
@@ -110,9 +102,7 @@ export default function BusinessSettings({
     };
 
     const saveProfile = () => {
-        // PHP cannot populate files on a real PUT, so spoof PUT over POST.
-        profileForm.transform((data) => ({ ...data, _method: 'put' }));
-        profileForm.post('/business/settings', { forceFormData: true, preserveScroll: true });
+        profileForm.put('/business/settings', { preserveScroll: true });
     };
 
     return (
@@ -122,7 +112,7 @@ export default function BusinessSettings({
             <PageHeader
                 eyebrow="Cuenta"
                 title="Configuración"
-                description="Información del negocio, ubicaciones, usuarios y preferencias."
+                description="Información del negocio, ubicaciones y usuarios."
                 actions={
                     canManage ? (
                         <Button variant="primary" size="sm" onClick={saveProfile} disabled={profileForm.processing}>
@@ -157,13 +147,6 @@ export default function BusinessSettings({
                                         onChange={(event) => profileForm.setData('name', event.target.value)}
                                     />
                                 </FormField>
-                                <FormField label="Zona horaria" error={profileForm.errors.timezone}>
-                                    <Input
-                                        value={profileForm.data.timezone}
-                                        disabled={!canManage}
-                                        onChange={(event) => profileForm.setData('timezone', event.target.value)}
-                                    />
-                                </FormField>
                                 <FormField label="Contacto" error={profileForm.errors.contact_name}>
                                     <Input
                                         value={profileForm.data.contact_name}
@@ -188,75 +171,9 @@ export default function BusinessSettings({
                                 </FormField>
                             </FormSection>
 
-                            <div className="mt-6">
-                                <FormSection title="Marca" columns={1}>
-                                    <div className="flex items-center gap-4">
-                                        <span className="flex size-16 items-center justify-center overflow-hidden rounded-control border border-line bg-surface text-faint">
-                                            {profileForm.data.logo ? (
-                                                <span className="text-[10px] text-center">Listo para subir</span>
-                                            ) : business.logo_url ? (
-                                                <img src={business.logo_url} alt={business.name} className="size-full object-cover" />
-                                            ) : (
-                                                <ImageIcon className="size-5" />
-                                            )}
-                                        </span>
-                                        <div>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png,.webp"
-                                                disabled={!canManage}
-                                                onChange={(event) => profileForm.setData('logo', event.target.files?.[0] ?? null)}
-                                                className="block text-xs text-muted file:mr-3 file:rounded-control file:border file:border-line file:bg-surface file:px-3 file:py-1.5 file:text-xs file:text-fg"
-                                            />
-                                            <p className="mt-1 text-[11px] text-faint">JPG, PNG o WebP · máx. 5 MB.</p>
-                                            {profileForm.errors.logo ? (
-                                                <p className="text-xs text-danger">{profileForm.errors.logo}</p>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </FormSection>
-                            </div>
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Audio y notificaciones</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-5">
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted">Volumen del audio del negocio</span>
-                                    <span className="metric text-fg">{profileForm.data.audio_volume}%</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={100}
-                                    value={profileForm.data.audio_volume}
-                                    disabled={!canManage}
-                                    onChange={(event) => profileForm.setData('audio_volume', Number(event.target.value))}
-                                    className="w-full accent-[#ffc83d]"
-                                />
-                            </div>
-                            <label className="flex items-center gap-2 text-sm text-muted">
-                                <Checkbox
-                                    checked={profileForm.data.notify_email}
-                                    disabled={!canManage}
-                                    onCheckedChange={(value) => profileForm.setData('notify_email', Boolean(value))}
-                                />
-                                Recibir resumen por correo
-                            </label>
-                            <label className="flex items-center gap-2 text-sm text-muted">
-                                <Checkbox
-                                    checked={profileForm.data.notify_offline}
-                                    disabled={!canManage}
-                                    onCheckedChange={(value) => profileForm.setData('notify_offline', Boolean(value))}
-                                />
-                                Avisarme cuando una pantalla se desconecte
-                            </label>
-                        </CardContent>
-                    </Card>
                 </TabsContent>
 
                 <TabsContent value="locations" className="mt-4">
