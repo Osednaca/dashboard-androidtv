@@ -101,6 +101,8 @@ export interface ContentScheduleEntity {
     daily_end_time: string | null;
     days_of_week: number[];
     status: string;
+    priority?: number;
+    items?: PlaylistItemEntity[];
     is_active_now: boolean;
     playlist: { id: number; name: string } | null;
     location: { id: number; name: string; city: string } | null;

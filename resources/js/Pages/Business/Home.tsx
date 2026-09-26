@@ -4,7 +4,6 @@ import {
     Image as ImageIcon,
     ListVideo,
     MonitorPlay,
-    PlayCircle,
     Plus,
     RefreshCw,
     Upload,
@@ -27,9 +26,8 @@ import type {
     ContentScheduleEntity,
     DeviceEntity,
     MediaEntity,
-    PlaylistSummary,
 } from '@/Types';
-import { formatDuration, formatNumber, formatRelative, formatTime } from '@/Utils/format';
+import { formatNumber, formatRelative, formatTime } from '@/Utils/format';
 
 interface HomeProps {
     business: BusinessProfile;
@@ -39,7 +37,6 @@ interface HomeProps {
         schedules: { active: number; total: number };
         last_sync_at: string | null;
     };
-    playlists: PlaylistSummary[];
     schedules: ContentScheduleEntity[];
     recentMedia: MediaEntity[];
     devices: DeviceEntity[];
@@ -51,7 +48,6 @@ interface HomeProps {
 export default function BusinessHome({
     business,
     kpis,
-    playlists,
     schedules,
     recentMedia,
     devices,
@@ -163,44 +159,11 @@ export default function BusinessHome({
                     </CardContent>
                 </Card>
 
-                <Card className="xl:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Playlists</CardTitle>
-                        <Button variant="ghost" size="sm" asChild>
-                            <Link href="/business/playlists">Ver todas</Link>
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {playlists.length === 0 ? (
-                            <p className="rounded-control border border-dashed border-line px-3 py-8 text-center text-xs text-faint">
-                                Aún no tienes playlists.
-                            </p>
-                        ) : (
-                            playlists.slice(0, 5).map((playlist) => (
-                                <Link
-                                    key={playlist.id}
-                                    href={`/business/playlists/${playlist.id}`}
-                                    className="flex items-center gap-3 rounded-control border border-line bg-surface p-2 transition-colors hover:border-line-strong"
-                                >
-                                    <MediaThumbnail media={playlist.cover} className="w-14 shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-xs font-medium text-fg">{playlist.name}</p>
-                                        <p className="text-[10px] text-faint">
-                                            {playlist.items_count} elementos · {formatDuration(playlist.total_duration)}
-                                        </p>
-                                    </div>
-                                    <PlayCircle className="size-5 shrink-0 text-accent" />
-                                </Link>
-                            ))
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="xl:col-span-3">
+                <Card className="xl:col-span-6">
                     <CardHeader>
                         <CardTitle>Programación de hoy</CardTitle>
                         <Button variant="ghost" size="sm" asChild>
-                            <Link href="/business/schedule">Ver calendario</Link>
+                            <Link href="/business/schedule">Gestionar</Link>
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -217,8 +180,7 @@ export default function BusinessHome({
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-xs font-medium text-fg">{schedule.name}</p>
                                         <p className="text-[10px] text-faint">
-                                            {formatTime(schedule.daily_start_time)} – {formatTime(schedule.daily_end_time)}
-                                            {schedule.playlist ? ` · ${schedule.playlist.name}` : ''}
+                                            {!schedule.daily_start_time && !schedule.daily_end_time ? 'Todo el día' : `${formatTime(schedule.daily_start_time)} – ${formatTime(schedule.daily_end_time)}`}
                                         </p>
                                     </div>
                                     {schedule.is_active_now ? <Badge tone="positive" dot>En curso</Badge> : null}

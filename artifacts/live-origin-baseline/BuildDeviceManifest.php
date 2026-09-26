@@ -21,7 +21,6 @@ class BuildDeviceManifest
     public function __construct(
         protected ResolveCampaignTargets $targets,
         protected ResolveActivePlaylist $activePlaylist,
-        protected LiveSourcePayload $liveSourcePayload,
     ) {}
 
     /**
@@ -36,40 +35,6 @@ class BuildDeviceManifest
     public function handle(Device $device): DeviceManifest
     {
         return DB::transaction(fn () => $this->build(Device::query()->lockForUpdate()->findOrFail($device->id)));
-    }
-
-    /**
-     * Repair cached manifests whose device pointer is missing or whose live embed URLs
-     * were signed for a noncanonical origin. Re-read the pointer under the device lock
-     * so a good pending version is preferred over an older current version.
-     */
-    public function rebuildIfLiveEmbedsAreNoncanonical(Device $device): bool
-    {
-        return DB::transaction(function () use ($device): bool {
-            $locked = Device::query()->lockForUpdate()->findOrFail($device->id);
-
-            if ($locked->pending_manifest_version !== null) {
-                $candidate = $locked->manifests()->where('version', $locked->pending_manifest_version)->first();
-                $expectedStatus = ManifestStatus::Pending;
-            } elseif ($locked->current_manifest_version !== null) {
-                $candidate = $locked->manifests()->where('version', $locked->current_manifest_version)->first();
-                $expectedStatus = ManifestStatus::Current;
-            } else {
-                return false;
-            }
-
-            $pointerIsInconsistent = ! $candidate || $candidate->status !== $expectedStatus;
-            $originIsNoncanonical = $candidate
-                && $this->liveSourcePayload->hasNoncanonicalEmbedUrls($candidate->payload ?? []);
-
-            if (! $pointerIsInconsistent && ! $originIsNoncanonical) {
-                return false;
-            }
-
-            $this->build($locked);
-
-            return true;
-        });
     }
 
     private function build(Device $device): DeviceManifest
@@ -161,7 +126,7 @@ class BuildDeviceManifest
                 'mime_type' => $asset->mime_type,
                 'duration' => $asset->duration,
                 'filesize' => $asset->filesize,
-                'live' => $this->liveSourcePayload->forAsset($asset),
+                'live' => app(LiveSourcePayload::class)->forAsset($asset),
             ])->values(),
             'configuration' => [
                 'timezone' => $this->activePlaylist->timezoneFor($device),

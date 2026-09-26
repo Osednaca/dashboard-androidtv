@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, Image as ImageIcon, ListVideo, PlayCircle, Sparkles } from 'lucide-react';
+import { CalendarDays, Image as ImageIcon, PlayCircle, Sparkles } from 'lucide-react';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { StatCard } from '@/Components/app/StatCard';
@@ -7,18 +7,16 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { BusinessLayout } from '@/Layouts/BusinessLayout';
-import type { BusinessProfile, ContentScheduleEntity, MediaEntity, PlaylistSummary } from '@/Types';
-import { formatDuration, formatTime } from '@/Utils/format';
+import type { BusinessProfile, ContentScheduleEntity, MediaEntity } from '@/Types';
+import { formatTime } from '@/Utils/format';
 
 export default function ContentIndex({
     business,
-    playlists,
     schedules,
     recentMedia,
     counts,
 }: {
     business: BusinessProfile;
-    playlists: PlaylistSummary[];
     schedules: ContentScheduleEntity[];
     recentMedia: MediaEntity[];
     counts: { images: number; videos: number; playlists: number; scheduled: number };
@@ -40,61 +38,23 @@ export default function ContentIndex({
                             </Link>
                         </Button>
                         <Button variant="primary" size="sm" asChild>
-                            <Link href="/business/playlists">
-                                <ListVideo className="size-4" />
-                                Playlists
+                            <Link href="/business/schedule">
+                                <CalendarDays className="size-4" />
+                                Programación
                             </Link>
                         </Button>
                     </>
                 }
             />
 
-            <div className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <StatCard label="Imágenes" value={counts.images} icon={ImageIcon} />
                 <StatCard label="Videos" value={counts.videos} icon={PlayCircle} delay={80} />
-                <StatCard label="Playlists" value={counts.playlists} icon={ListVideo} delay={160} />
                 <StatCard label="Programaciones activas" value={counts.scheduled} icon={CalendarDays} delay={240} />
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <Card className="xl:col-span-7">
-                    <CardHeader>
-                        <CardTitle>Playlists</CardTitle>
-                        <Button variant="ghost" size="sm" asChild>
-                            <Link href="/business/playlists">Gestionar</Link>
-                        </Button>
-                    </CardHeader>
-                    <CardContent>
-                        {playlists.length === 0 ? (
-                            <p className="rounded-control border border-dashed border-line px-4 py-10 text-center text-xs text-faint">
-                                Crea tu primera playlist para organizar el contenido.
-                            </p>
-                        ) : (
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                {playlists.map((playlist) => (
-                                    <Link
-                                        key={playlist.id}
-                                        href={`/business/playlists/${playlist.id}`}
-                                        className="flex items-center gap-3 rounded-control border border-line bg-surface p-2 transition-colors hover:border-line-strong"
-                                    >
-                                        <MediaThumbnail media={playlist.cover} className="w-20 shrink-0" />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-medium text-fg">{playlist.name}</p>
-                                            <p className="text-[11px] text-faint">
-                                                {playlist.items_count} elementos · {formatDuration(playlist.total_duration)}
-                                            </p>
-                                        </div>
-                                        <Badge tone={playlist.status.value === 'active' ? 'positive' : 'neutral'}>
-                                            {playlist.status.label}
-                                        </Badge>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="xl:col-span-5">
+                <Card className="xl:col-span-12">
                     <CardHeader>
                         <CardTitle>Programación de hoy</CardTitle>
                         <Button variant="ghost" size="sm" asChild>
@@ -115,7 +75,7 @@ export default function ContentIndex({
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-xs font-medium text-fg">{schedule.name}</p>
                                         <p className="text-[10px] text-faint">
-                                            {formatTime(schedule.daily_start_time)} – {formatTime(schedule.daily_end_time)}
+                                            {!schedule.daily_start_time && !schedule.daily_end_time ? 'Todo el día' : `${formatTime(schedule.daily_start_time)} – ${formatTime(schedule.daily_end_time)}`}
                                             {schedule.location ? ` · ${schedule.location.name}` : ''}
                                         </p>
                                     </div>

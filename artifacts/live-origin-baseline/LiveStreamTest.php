@@ -7,14 +7,11 @@ use App\Domain\Businesses\Models\Business;
 use App\Domain\Campaigns\Models\Campaign;
 use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Models\Device;
-use App\Domain\Devices\Models\DeviceManifest;
 use App\Domain\Media\Models\Layout;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Media\Services\LiveSourceParser;
-use App\Domain\Media\Services\LiveSourcePayload;
 use App\Domain\Playback\Models\PlaybackEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use Tests\Concerns\CreatesUsers;
 use Tests\TestCase;
@@ -22,149 +19,6 @@ use Tests\TestCase;
 class LiveStreamTest extends TestCase
 {
     use CreatesUsers, RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        config(['app.url' => 'https://signage.test']);
-    }
-
-    public function test_live_embed_signing_uses_canonical_https_origin_instead_of_ambient_url_root(): void
-    {
-        $asset = MediaAsset::factory()->create([
-            'type' => 'live_stream',
-            'storage_path' => '',
-            'metadata' => ['live' => ['original_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']],
-        ]);
-        URL::forceRootUrl('http://ambient.invalid');
-        URL::forceScheme('http');
-
-        try {
-            $requestPayload = app(LiveSourcePayload::class)->forAsset($asset);
-            $this->assertSame('http://ambient.invalid', URL::to('/'));
-        } finally {
-            URL::forceRootUrl(null);
-            URL::forceScheme(null);
-        }
-
-        $queuePayload = app(LiveSourcePayload::class)->forAsset($asset);
-        $this->assertSame($requestPayload['embed_url'], $queuePayload['embed_url']);
-        $this->assertSame('https', parse_url($requestPayload['embed_url'], PHP_URL_SCHEME));
-        $this->assertSame('signage.test', parse_url($requestPayload['embed_url'], PHP_URL_HOST));
-        $this->get($requestPayload['embed_url'])->assertOk();
-        $this->get($requestPayload['embed_url'].'&tampered=1')->assertForbidden();
-
-        $twitch = MediaAsset::factory()->create([
-            'type' => 'live_stream',
-            'storage_path' => '',
-            'metadata' => ['live' => ['original_url' => 'https://www.twitch.tv/examplechannel']],
-        ]);
-        $twitchPayload = app(LiveSourcePayload::class)->forAsset($twitch);
-        foreach (['embed_url', 'embed_audio_url'] as $key) {
-            $this->assertSame('https', parse_url($twitchPayload[$key], PHP_URL_SCHEME));
-            $this->assertSame('signage.test', parse_url($twitchPayload[$key], PHP_URL_HOST));
-        }
-    }
-
-    public function test_live_embed_signing_rejects_a_non_https_application_origin(): void
-    {
-        $asset = MediaAsset::factory()->create([
-            'type' => 'live_stream',
-            'storage_path' => '',
-            'metadata' => ['live' => ['original_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']],
-        ]);
-        config(['app.url' => 'http://signage.test']);
-
-        $this->expectException(\LogicException::class);
-        app(LiveSourcePayload::class)->forAsset($asset);
-    }
-
-    /** @return array{Device, MediaAsset, DeviceManifest} */
-    private function createDeviceWithNoncanonicalCurrentLiveManifest(bool $supersedeCurrentStatus = false): array
-    {
-        $device = Device::factory()->online()->create();
-        $asset = MediaAsset::factory()->create([
-            'type' => 'live_stream',
-            'storage_path' => '',
-            'metadata' => ['live' => ['original_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']],
-        ]);
-        $campaign = Campaign::factory()->create([
-            'status' => 'active', 'starts_at' => today()->subDay(), 'ends_at' => today()->addDay(),
-            'daily_start_time' => '00:00:00', 'daily_end_time' => '23:59:59', 'days_of_week' => [1, 2, 3, 4, 5, 6, 7],
-        ]);
-        $campaign->targets()->create(['target_type' => 'device', 'target_id' => $device->id]);
-        $campaign->creatives()->create([
-            'media_asset_id' => $asset->id, 'duration' => 10, 'weight' => 1, 'position' => 0,
-            'status' => 'active', 'configuration' => [],
-        ]);
-
-        $oldManifest = app(BuildDeviceManifest::class)->handle($device);
-        $payload = $oldManifest->payload;
-        foreach ($payload['assets'] as &$entry) {
-            if ($entry['id'] === $asset->id) {
-                foreach (['embed_url', 'embed_audio_url'] as $key) {
-                    $parts = parse_url($entry['live'][$key]);
-                    $entry['live'][$key] = 'https://legacy.invalid'.$parts['path'].'?'.$parts['query'];
-                }
-            }
-        }
-        unset($entry);
-        $oldManifest->forceFill(['payload' => $payload, 'checksum' => hash('sha256', json_encode($payload))])->save();
-
-        $this->withToken($device->issueToken())
-            ->postJson('/api/v1/device/sync/acknowledge', ['version' => $oldManifest->version, 'success' => true])
-            ->assertOk();
-        if ($supersedeCurrentStatus) {
-            $oldManifest->forceFill(['status' => 'superseded'])->save();
-        }
-
-        return [$device, $asset, $oldManifest];
-    }
-
-    public function test_sync_repairs_cached_noncanonical_current_live_embed_once(): void
-    {
-        [$device, $asset, $oldManifest] = $this->createDeviceWithNoncanonicalCurrentLiveManifest();
-        $this->withToken($device->issueToken());
-        $this->assertSame('current', $oldManifest->fresh()->status->value);
-        $oldLive = collect($oldManifest->fresh()->payload['assets'])->firstWhere('id', $asset->id)['live'];
-        $this->assertSame('legacy.invalid', parse_url($oldLive['embed_url'], PHP_URL_HOST));
-
-        $sync = $this->getJson('/api/v1/device/sync')->assertOk();
-        $newVersion = $sync->json('pending_manifest_version');
-        $this->assertGreaterThan((int) $oldManifest->version, (int) $newVersion);
-        $sync->assertJsonPath('current_manifest_version', $oldManifest->version)
-            ->assertJsonPath('update_available', true);
-        $manifest = $this->getJson('/api/v1/device/manifest')->assertOk();
-        $this->assertSame($newVersion, $manifest->json('manifest.version'));
-        $live = collect($manifest->json('manifest.payload.assets'))->firstWhere('id', $asset->id)['live'];
-        $this->assertSame('signage.test', parse_url($live['embed_url'], PHP_URL_HOST));
-
-        $this->getJson('/api/v1/device/sync')->assertOk()
-            ->assertJsonPath('pending_manifest_version', $newVersion);
-        $this->getJson('/api/v1/device/manifest')->assertOk()
-            ->assertJsonPath('manifest.version', $newVersion);
-        $this->assertSame(2, $device->manifests()->count());
-    }
-
-    public function test_manifest_repair_prefers_good_pending_manifest_over_noncanonical_current_pointer(): void
-    {
-        [$device, , $oldManifest] = $this->createDeviceWithNoncanonicalCurrentLiveManifest(supersedeCurrentStatus: true);
-        $this->withToken($device->issueToken());
-        $this->assertSame('superseded', $oldManifest->fresh()->status->value);
-        $this->assertNotNull($device->fresh()->current_manifest_version);
-
-        $repaired = $this->getJson('/api/v1/device/manifest')->assertOk();
-        $newVersion = $repaired->json('manifest.version');
-        $this->assertGreaterThan((int) $oldManifest->version, (int) $newVersion);
-        $this->assertSame('pending', $repaired->json('manifest.status'));
-        $this->assertSame('signage.test', parse_url($repaired->json('manifest.payload.assets.0.live.embed_url'), PHP_URL_HOST));
-        $this->getJson('/api/v1/device/sync')->assertOk()
-            ->assertJsonPath('current_manifest_version', $oldManifest->version)
-            ->assertJsonPath('pending_manifest_version', $newVersion);
-        $this->getJson('/api/v1/device/manifest')->assertOk()
-            ->assertJsonPath('manifest.version', $newVersion);
-        $this->assertSame(2, $device->manifests()->count());
-    }
 
     public function test_live_campaign_requires_valid_schedule_fallback_and_size_review_and_restores_fields(): void
     {

@@ -33,6 +33,7 @@ class ResolveActivePlaylist
         $current = $device->currentPlaylist;
 
         if ($current
+            && ! $current->is_schedule_managed
             && $current->type === PlaylistType::Business
             && $current->status === PlaylistStatus::Active) {
             return $current->loadMissing('items.mediaAsset');
@@ -42,6 +43,7 @@ class ResolveActivePlaylist
             ->where('business_id', $device->business_id)
             ->where('type', PlaylistType::Business->value)
             ->where('status', PlaylistStatus::Active->value)
+            ->where('is_schedule_managed', false)
             ->with(['items.mediaAsset'])
             ->orderBy('id')
             ->first();

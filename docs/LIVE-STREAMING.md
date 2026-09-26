@@ -21,13 +21,15 @@ El manifiesto incluye campañas futuras con directos, fechas de campaña y refer
 3. Configurar `APP_URL` con el origen HTTPS público real. Para Twitch, configurar `LIVE_TWITCH_PARENTS=signage.finespublicidad.com` (sin esquema ni ruta). Incluir también cualquier dominio propio adicional que contenga la vista previa.
 4. Para HLS, configurar `LIVE_HLS_HOSTS=video.ejemplo.com,segmentos.ejemplo.com`: hosts exactos aprobados para la URL inicial. Android permite también sus subdominios para segmentos y claves; configura hosts específicos controlados por tu proveedor. Sin esta variable no se aceptan fuentes HLS. Las URLs deben ser HTTPS directas; no se siguen redirecciones en Android. La prueba en navegador necesita CORS habilitado por el servidor HLS.
 5. Reconstruir configuración con `php artisan config:cache` y reiniciar los workers según el despliegue habitual.
-6. Instalar APK **0.1.14** en las pantallas destino **antes de publicar campañas con directos**. Versiones anteriores no reconocen `live_stream`.
+6. Instalar APK **0.1.15 o posterior** en las pantallas destino **antes de publicar campañas con directos**. Las versiones anteriores a 0.1.14 no reconocen `live_stream`; 0.1.15 corrige la retirada de campañas durante descargas y reproducciones temporales.
 
 El volumen `signage-media` permanece en `/var/www/html/storage/app/public`. Esta función no cambia su ubicación. No se ha desplegado automáticamente al servidor.
 
 ## Prioridades, audio y recuperación
 
 Se conserva Instant Play explícito de pantalla completa como máxima prioridad. Después se selecciona un directo por prioridad de campaña, desempate por campaña y orden del elemento. El directo ocupa solo su zona y pausa su contenido subyacente; los Instant Plays de esa zona esperan. Al terminar el horario o retirar la campaña del manifiesto, vuelve el contenido habitual. Los cursores se conservan durante la ocupación temporal.
+
+Desde Android 0.1.15, las campañas retiradas se eliminan de la programación local en cuanto se recibe y verifica la vigencia del nuevo manifiesto, antes de descargar archivos de reemplazo. Una descarga fallida no restaura la campaña retirada. La versión nueva solo se confirma al completar la instalación; el contenido del negocio se conserva. Las descargas comprueban cada 10 segundos si su manifiesto fue reemplazado y se cancelan si quedó obsoleto. La TV necesita conexión para recibir la pausa del servidor.
 
 Solo la zona autorizada por el modo de audio del TV puede emitir sonido. Pantalla completa puede emitir audio si el dispositivo no está silenciado y el administrador lo habilitó. El respaldo se reproduce silenciado.
 

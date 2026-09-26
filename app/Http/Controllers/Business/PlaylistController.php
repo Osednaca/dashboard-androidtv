@@ -5,39 +5,21 @@ namespace App\Http\Controllers\Business;
 use App\Domain\Playlists\Enums\PlaylistStatus;
 use App\Domain\Playlists\Enums\PlaylistType;
 use App\Domain\Playlists\Models\Playlist;
-use App\Domain\Playlists\Models\PlaylistItem;
 use App\Domain\Scheduling\Jobs\RefreshBusinessManifests;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
-use App\Http\Presenters\EntityPresenter;
 use App\Http\Requests\Business\PlaylistRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class PlaylistController extends Controller
 {
     use AuthorizesBusiness;
 
-    public function index(Request $request): Response
+    public function index(Request $request): RedirectResponse
     {
-        $request->validate(['search' => ['nullable', 'string', 'max:120']]);
-
-        $playlists = $this->business()
-            ->playlists()
-            ->where('type', PlaylistType::Business->value)
-            ->search($request->string('search')->toString())
-            ->with(['items.mediaAsset'])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Playlist $playlist) => EntityPresenter::playlistSummary($playlist));
-
-        return Inertia::render('Business/Playlists/Index', [
-            'playlists' => $playlists->values()->all(),
-            'filters' => $request->only('search'),
-        ]);
+        return redirect()->route('business.schedule.index');
     }
 
     public function store(PlaylistRequest $request): RedirectResponse
@@ -53,33 +35,21 @@ class PlaylistController extends Controller
             ->with('success', 'Lista de reproducción creada.');
     }
 
-    public function show(Playlist $playlist): Response
+    public function show(Playlist $playlist): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless($playlist->type === PlaylistType::Business, 404);
+        $scheduleId = $playlist->is_schedule_managed ? $playlist->schedules()->value('id') : null;
 
-        $playlist->load(['items.mediaAsset']);
-
-        return Inertia::render('Business/Playlists/Show', [
-            'playlist' => EntityPresenter::playlistSummary($playlist),
-            'items' => $playlist->items
-                ->map(fn (PlaylistItem $item) => EntityPresenter::playlistItem($item))
-                ->values()
-                ->all(),
-            'availableMedia' => $this->businessMediaQuery()
-                ->ready()
-                ->latest()
-                ->limit(100)
-                ->get()
-                ->map(fn ($media) => EntityPresenter::mediaAsset($media))
-                ->values()
-                ->all(),
-            'transitions' => PlaylistItem::transitionOptions(),
-        ]);
+        return redirect()->route('business.schedule.index', $scheduleId
+            ? ['edit' => $scheduleId]
+            : ($playlist->is_schedule_managed ? [] : ['import' => $playlist->id]));
     }
 
     public function update(PlaylistRequest $request, Playlist $playlist): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type === PlaylistType::Business, 404);
 
         $playlist->update([
             'name' => $request->string('name')->toString(),
@@ -94,6 +64,7 @@ class PlaylistController extends Controller
     public function duplicate(Playlist $playlist): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type === PlaylistType::Business, 404);
 
         $copy = DB::transaction(function () use ($playlist) {
             $copy = $this->business()->playlists()->create([
@@ -123,6 +94,7 @@ class PlaylistController extends Controller
     public function destroy(Playlist $playlist): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type === PlaylistType::Business, 404);
 
         $playlist->items()->delete();
         $playlist->schedules()->delete();
