@@ -73,7 +73,7 @@ export function AppSidebar({ collapsed, className }: { collapsed: boolean; class
 
     return (
         <SidebarShell
-            brand={{ title: 'Signage TV', subtitle: 'Red de pantallas', href: '/admin/dashboard' }}
+            brand={{ title: 'Alter', subtitle: 'Red de pantallas', href: '/admin/dashboard' }}
             sections={visibleSections}
             collapsed={collapsed}
             className={className}

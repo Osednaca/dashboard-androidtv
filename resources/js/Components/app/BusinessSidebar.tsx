@@ -31,7 +31,7 @@ export function BusinessSidebar({ collapsed, className }: { collapsed: boolean; 
 
     return (
         <SidebarShell
-            brand={{ title: 'Signage TV', subtitle: 'Panel del negocio', href: '/business/dashboard' }}
+            brand={{ title: 'Alter', subtitle: 'Panel del negocio', href: '/business/dashboard' }}
             sections={[{ label: 'Mi negocio', items: visible }]}
             collapsed={collapsed}
             className={className}

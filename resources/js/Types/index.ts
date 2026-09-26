@@ -110,7 +110,7 @@ export interface ContentScheduleEntity {
 
 export interface PageProps {
     auth: { user: AuthUser | null };
-    app: { name: string; env: string; version: string };
+    app: { name: string; logo_url: string; env: string; version: string };
     flash: { success?: string; error?: string; info?: string };
     notifications: { unread: number; recent: NotificationItem[] } | null;
     business: BusinessContext | null;
