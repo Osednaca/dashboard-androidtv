@@ -11,17 +11,14 @@ use Illuminate\Http\Request;
 
 class ManifestController extends Controller
 {
-    public function show(Request $request, BuildDeviceManifest $builder): JsonResponse
+    public function show(Request $request): JsonResponse
     {
         /** @var Device $device */
         $device = $request->user();
         app(RefreshCampaignDates::class)->handle();
         $device->refresh();
         if ($device->manifest_dirty) {
-            $builder->handle($device);
-            $device->refresh();
-        }
-        if ($builder->rebuildIfLiveEmbedsAreNoncanonical($device)) {
+            app(BuildDeviceManifest::class)->handle($device);
             $device->refresh();
         }
 

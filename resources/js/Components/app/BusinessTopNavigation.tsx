@@ -103,11 +103,11 @@ export function BusinessTopNavigation({
             <button
                 type="button"
                 onClick={() => window.dispatchEvent(new Event('signage:open-search'))}
-                aria-label="Buscar contenido, pantallas, playlists"
+                aria-label="Buscar contenido, pantallas, programación"
                 className="group flex size-10 shrink-0 items-center justify-center gap-3 rounded-control border border-line bg-surface text-left text-sm text-muted transition-colors hover:border-line-strong sm:w-auto sm:min-w-0 sm:flex-1 sm:px-3 lg:max-w-xl"
             >
                 <Search className="size-4 text-faint" />
-                <span className="hidden min-w-0 flex-1 truncate sm:block">Buscar contenido, pantallas, playlists…</span>
+                <span className="hidden min-w-0 flex-1 truncate sm:block">Buscar contenido, pantallas, programación…</span>
                 <span className="hidden items-center gap-1 sm:flex">
                     <kbd className="rounded border border-line bg-inset px-1.5 py-0.5 text-[10px] text-faint">Ctrl</kbd>
                     <kbd className="rounded border border-line bg-inset px-1.5 py-0.5 text-[10px] text-faint">K</kbd>

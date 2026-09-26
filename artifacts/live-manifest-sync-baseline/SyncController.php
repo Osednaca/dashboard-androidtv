@@ -44,9 +44,6 @@ class SyncController extends Controller
             $builder->handle($device);
             $device->refresh();
         }
-        if ($builder->rebuildIfLiveEmbedsAreNoncanonical($device)) {
-            $device->refresh();
-        }
 
         return response()->json([
             'server_time' => now()->toIso8601String(),
@@ -115,12 +112,11 @@ class SyncController extends Controller
             }
             $locked->manifests()
                 ->where('status', 'current')
-                ->where('id', '!=', $manifest->getKey())
                 ->update(['status' => 'superseded']);
 
             $manifest->forceFill([
                 'status' => 'current',
-                'activated_at' => $manifest->activated_at ?? now(),
+                'activated_at' => now(),
             ])->save();
 
             $locked->forceFill([

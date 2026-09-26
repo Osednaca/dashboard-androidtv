@@ -44,9 +44,6 @@ class SyncController extends Controller
             $builder->handle($device);
             $device->refresh();
         }
-        if ($builder->rebuildIfLiveEmbedsAreNoncanonical($device)) {
-            $device->refresh();
-        }
 
         return response()->json([
             'server_time' => now()->toIso8601String(),

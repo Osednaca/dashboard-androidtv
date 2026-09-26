@@ -96,6 +96,12 @@ Route::delete('playlists/{playlist}/items/{item}', [PlaylistItemController::clas
     ->name('business.playlists.items.destroy');
 
 // Scheduling
+Route::get('schedule/media', [ScheduleController::class, 'media'])
+    ->middleware(['permission:business.schedules.view', 'permission:business.media.view'])
+    ->name('business.schedule.media');
+Route::get('schedule/media-status', [ScheduleController::class, 'mediaStatus'])
+    ->middleware(['permission:business.schedules.view', 'permission:business.media.view'])
+    ->name('business.schedule.media-status');
 Route::get('schedule', [ScheduleController::class, 'index'])
     ->middleware('permission:business.schedules.view')
     ->name('business.schedule.index');

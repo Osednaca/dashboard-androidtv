@@ -16,7 +16,7 @@ export function ScheduleCard({
     onDelete: (schedule: ContentScheduleEntity) => void;
 }) {
     return (
-        <div className="flex items-start gap-3 rounded-card border border-line bg-card p-4">
+        <div className="flex min-w-0 flex-wrap items-start gap-3 rounded-card border border-line bg-card p-4">
             <span
                 className={`flex size-10 shrink-0 items-center justify-center rounded-control border ${
                     schedule.is_active_now ? 'border-accent/40 bg-accent/10 text-accent' : 'border-line bg-surface text-faint'
@@ -26,16 +26,17 @@ export function ScheduleCard({
             </span>
 
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-medium text-fg">{schedule.name}</p>
                     {schedule.is_active_now ? <Badge tone="positive" dot>En curso</Badge> : null}
+                    {schedule.status !== 'active' ? <Badge tone="neutral">Inactiva</Badge> : null}
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
-                    {formatTime(schedule.daily_start_time)} – {formatTime(schedule.daily_end_time)}
-                    {schedule.playlist ? ` · ${schedule.playlist.name}` : ''}
+                    {!schedule.daily_start_time && !schedule.daily_end_time ? 'Todo el día' : `${formatTime(schedule.daily_start_time)} – ${formatTime(schedule.daily_end_time)}`}
+                    {schedule.items ? ` · ${schedule.items.length} elementos` : ''}
                 </p>
-                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-faint">
-                    <MapPin className="size-3" />
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                    <MapPin className="size-3 shrink-0" />
                     {schedule.location?.name ?? 'Todas las ubicaciones'}
                 </p>
             </div>

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Business;
 
 use App\Domain\Devices\Models\Device;
-use App\Domain\Playlists\Enums\PlaylistType;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -43,25 +42,6 @@ class SearchController extends Controller
             }
         }
 
-        if ($user->hasPermission('business.playlists.view')) {
-            $playlists = $this->business()
-                ->playlists()
-                ->where('type', PlaylistType::Business->value)
-                ->where('name', 'like', $like)
-                ->limit(5)
-                ->get()
-                ->map(fn ($playlist) => [
-                    'id' => $playlist->id,
-                    'title' => $playlist->name,
-                    'subtitle' => 'Lista de reproducción',
-                    'href' => '/business/playlists/'.$playlist->id,
-                ]);
-
-            if ($playlists->isNotEmpty()) {
-                $groups[] = ['label' => 'Listas', 'icon' => 'playlist', 'items' => $playlists->values()->all()];
-            }
-        }
-
         if ($user->hasPermission('business.devices.view')) {
             $screens = $this->business()->devices()
                 ->where('name', 'like', $like)
@@ -89,7 +69,7 @@ class SearchController extends Controller
                     'id' => $schedule->id,
                     'title' => $schedule->name ?: 'Programación',
                     'subtitle' => 'Programación',
-                    'href' => '/business/schedule',
+                    'href' => '/business/schedule?edit='.$schedule->id,
                 ]);
 
             if ($schedules->isNotEmpty()) {

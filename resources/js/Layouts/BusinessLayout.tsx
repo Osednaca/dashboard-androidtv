@@ -19,7 +19,7 @@ export function BusinessLayout({
             children={children}
             storageKey="signage:business-sidebar:v1"
             searchCommand
-            searchCommandProps={{ endpoint: '/business/search', placeholder: 'Buscar contenido, pantallas, playlists…' }}
+            searchCommandProps={{ endpoint: '/business/search', placeholder: 'Buscar contenido, pantallas, programación…' }}
             sidebar={({ collapsed, mobile }) =>
                 mobile ? (
                     <BusinessSidebar collapsed={false} className="!flex w-64 lg:!hidden" />

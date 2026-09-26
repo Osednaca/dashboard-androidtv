@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['business_id', 'advertiser_id', 'name', 'type', 'status'])]
+#[Fillable(['business_id', 'advertiser_id', 'name', 'type', 'status', 'is_schedule_managed'])]
 class Playlist extends Model
 {
     protected function casts(): array
@@ -24,6 +24,7 @@ class Playlist extends Model
         return [
             'type' => PlaylistType::class,
             'status' => PlaylistStatus::class,
+            'is_schedule_managed' => 'boolean',
         ];
     }
 

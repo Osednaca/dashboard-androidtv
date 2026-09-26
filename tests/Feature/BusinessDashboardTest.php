@@ -53,7 +53,6 @@ class BusinessDashboardTest extends TestCase
         $routes = [
             '/business/content',
             '/business/library',
-            '/business/playlists',
             '/business/schedule',
             '/business/screens',
             '/business/preview',

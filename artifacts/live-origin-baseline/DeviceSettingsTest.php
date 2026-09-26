@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Campaigns\Models\Campaign;
 use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Enums\DeviceStatus;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Media\Models\Layout;
-use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Operations\Models\AuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -167,36 +165,6 @@ class DeviceSettingsTest extends TestCase
         $this->getJson('/api/v1/device/manifest')->assertOk()
             ->assertJsonPath('manifest.version', $manifest->version)
             ->assertJsonPath('manifest.status', 'current');
-    }
-
-    public function test_tv_settings_manifest_uses_canonical_origin_instead_of_request_host(): void
-    {
-        config(['app.url' => 'https://signage.test']);
-        $device = $this->device();
-        $asset = MediaAsset::factory()->create([
-            'type' => 'live_stream', 'storage_path' => '',
-            'metadata' => ['live' => ['original_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ']],
-        ]);
-        $campaign = Campaign::factory()->create([
-            'status' => 'active', 'starts_at' => today()->subDay(), 'ends_at' => today()->addDay(),
-            'daily_start_time' => '00:00:00', 'daily_end_time' => '23:59:59', 'days_of_week' => [1, 2, 3, 4, 5, 6, 7],
-        ]);
-        $campaign->targets()->create(['target_type' => 'device', 'target_id' => $device->id]);
-        $campaign->creatives()->create([
-            'media_asset_id' => $asset->id, 'duration' => 10, 'weight' => 1, 'position' => 0,
-            'status' => 'active', 'configuration' => [],
-        ]);
-
-        $response = $this->withToken($device->issueToken())
-            ->withServerVariables(['HTTP_HOST' => 'ambient.invalid', 'SERVER_NAME' => 'ambient.invalid', 'HTTPS' => 'off'])
-            ->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => ['audio_mode' => 'advertising']])
-            ->assertOk();
-
-        $live = collect($response->json('manifest.payload.assets'))->firstWhere('id', $asset->id)['live'];
-        foreach (['embed_url', 'embed_audio_url'] as $key) {
-            $this->assertSame('https', parse_url($live[$key], PHP_URL_SCHEME));
-            $this->assertSame('signage.test', parse_url($live[$key], PHP_URL_HOST));
-        }
     }
 
     public function test_legacy_pin_lockout_does_not_block_settings_for_new_players(): void

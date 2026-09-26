@@ -5,11 +5,12 @@ import { useRef, useState } from 'react';
 import { Button } from '@/Components/ui/button';
 import { Progress } from '@/Components/ui/progress';
 import { cn } from '@/Utils/cn';
+import type { MediaEntity } from '@/Types';
 
 type Entry = { id: number; file: File; status: 'pending' | 'uploading' | 'done' | 'failed'; progress: number; error?: string };
 
 /** One request per file keeps large batches below the server's request-size limit. */
-export function UploadDropzone({ action, accept = '.jpg,.jpeg,.png,.webp,.mp4', hint = 'JPG, PNG, WebP o MP4. Puedes seleccionar varios archivos.', disabled = false, metadata = {}, onBusyChange, onUploaded }: {
+export function UploadDropzone({ action, accept = '.jpg,.jpeg,.png,.webp,.mp4', hint = 'JPG, PNG, WebP o MP4. Puedes seleccionar varios archivos.', disabled = false, metadata = {}, onBusyChange, onUploaded, onAssetUploaded, reloadOnComplete = true }: {
     action: string;
     accept?: string;
     hint?: string;
@@ -17,6 +18,8 @@ export function UploadDropzone({ action, accept = '.jpg,.jpeg,.png,.webp,.mp4', 
     metadata?: Record<string, string>;
     onBusyChange?: (busy: boolean) => void;
     onUploaded?: () => void;
+    onAssetUploaded?: (media: MediaEntity) => void;
+    reloadOnComplete?: boolean;
 }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const running = useRef(false);
@@ -39,11 +42,12 @@ export function UploadDropzone({ action, accept = '.jpg,.jpeg,.png,.webp,.mp4', 
                 payload.append('file', entry.file);
                 Object.entries(metadata).forEach(([key, value]) => { if (value) payload.append(key, value); });
                 try {
-                    await axios.post(action, payload, {
+                    const response = await axios.post<{ media: MediaEntity }>(action, payload, {
                         headers: { Accept: 'application/json' },
                         onUploadProgress: ({ loaded, total }) => update(entry.id, { progress: total ? Math.round(loaded * 100 / total) : 0 }),
                     });
                     update(entry.id, { status: 'done', progress: 100 });
+                    onAssetUploaded?.(response.data.media);
                 } catch (error) {
                     failed = true;
                     const response = axios.isAxiosError(error) ? error.response : undefined;
@@ -56,7 +60,11 @@ export function UploadDropzone({ action, accept = '.jpg,.jpeg,.png,.webp,.mp4', 
             running.current = false;
             setBusy(false);
             onBusyChange?.(false);
-            router.reload({ onSuccess: () => { if (!failed) onUploaded?.(); } });
+            if (reloadOnComplete) {
+                router.reload({ onSuccess: () => { if (!failed) onUploaded?.(); } });
+            } else if (!failed) {
+                onUploaded?.();
+            }
         }
     };
     const select = (files: FileList | null) => {

@@ -21,6 +21,7 @@ class PlaylistItemController extends Controller
     public function store(StorePlaylistItemRequest $request, Playlist $playlist): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type->value === 'business', 404);
 
         $media = MediaAsset::query()->findOrFail($request->integer('media_asset_id'));
         $this->authorizeOwnedMedia($media);
@@ -40,6 +41,7 @@ class PlaylistItemController extends Controller
     public function update(UpdatePlaylistItemRequest $request, Playlist $playlist, PlaylistItem $item): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type->value === 'business', 404);
         $this->authorizeItem($playlist, $item);
 
         $item->update([
@@ -55,6 +57,7 @@ class PlaylistItemController extends Controller
     public function destroy(Playlist $playlist, PlaylistItem $item): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type->value === 'business', 404);
         $this->authorizeItem($playlist, $item);
 
         $item->delete();
@@ -67,6 +70,7 @@ class PlaylistItemController extends Controller
     public function reorder(ReorderPlaylistRequest $request, Playlist $playlist): RedirectResponse
     {
         $this->authorizeOwned($playlist);
+        abort_unless(! $playlist->is_schedule_managed && $playlist->type->value === 'business', 404);
 
         $order = collect($request->input('order', []))->map(fn ($id) => (int) $id);
         $validIds = $playlist->items()->pluck('id');

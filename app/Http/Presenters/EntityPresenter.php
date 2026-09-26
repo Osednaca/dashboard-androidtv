@@ -470,6 +470,10 @@ class EntityPresenter
             'id' => $schedule->id,
             'name' => $schedule->name ?: ($schedule->relationLoaded('playlist') && $schedule->playlist ? $schedule->playlist->name : 'Programación'),
             'daily_start_time' => $schedule->daily_start_time,
+            'priority' => $schedule->priority,
+            'items' => $schedule->relationLoaded('playlist') && $schedule->playlist?->relationLoaded('items')
+                ? $schedule->playlist->items->map(fn (PlaylistItem $item) => self::playlistItem($item))->values()->all()
+                : [],
             'daily_end_time' => $schedule->daily_end_time,
             'days_of_week' => $days,
             'status' => $schedule->status,
