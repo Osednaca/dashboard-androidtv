@@ -1,11 +1,14 @@
-import { Head, useForm } from '@inertiajs/react';
-import { Loader2, Lock, Mail, MonitorPlay } from 'lucide-react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { Loader2, Lock, Mail } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import { BrandLogo } from '@/Components/app/BrandLogo';
+import type { PageProps } from '@/Types';
 
 export default function Login({ status }: { status?: string }) {
+    const { app } = usePage<PageProps>().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -31,11 +34,9 @@ export default function Login({ status }: { status?: string }) {
             <div className="relative grid w-full max-w-5xl overflow-hidden rounded-panel border border-line bg-card shadow-pop lg:grid-cols-2">
                 <div className="hidden flex-col justify-between border-r border-line bg-surface p-10 lg:flex">
                     <div className="flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-control border border-accent/30 bg-accent/10 text-accent">
-                            <MonitorPlay className="size-5" />
-                        </span>
+                        <BrandLogo decorative className="size-12" />
                         <div>
-                            <p className="text-sm font-semibold text-fg">Signage TV</p>
+                            <p className="text-sm font-semibold text-fg">{app.name}</p>
                             <p className="text-[11px] uppercase tracking-wider text-faint">Red de pantallas</p>
                         </div>
                     </div>
@@ -64,6 +65,10 @@ export default function Login({ status }: { status?: string }) {
                 </div>
 
                 <div className="p-8 sm:p-10">
+                    <div className="mb-6 flex items-center gap-3 lg:hidden">
+                        <BrandLogo decorative className="size-12" />
+                        <span className="text-lg font-semibold text-fg">{app.name}</span>
+                    </div>
                     <h1 className="text-xl font-semibold tracking-tight text-fg">Inicia sesión</h1>
                     <p className="mt-1 text-sm text-muted">
                         Accede al panel de administración de la red publicitaria.

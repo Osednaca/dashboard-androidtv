@@ -5,7 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title inertia>{{ config('app.name', 'Signage TV') }}</title>
+        <title inertia>{{ config('branding.name', 'Alter') }}</title>
+        <link rel="icon" type="image/jpeg" href="{{ config('branding.logo_url', '/brand/alter-logo.jpg') }}">
+        <link rel="apple-touch-icon" href="{{ config('branding.logo_url', '/brand/alter-logo.jpg') }}">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

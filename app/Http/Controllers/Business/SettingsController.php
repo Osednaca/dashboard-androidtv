@@ -63,20 +63,26 @@ class SettingsController extends Controller
         $business = $this->business();
         $data = $request->validated();
 
-        $metadata = array_merge($business->metadata ?? [], [
-            'audio_volume' => $data['audio_volume'] ?? data_get($business->metadata, 'audio_volume', 70),
-            'notify_email' => (bool) ($data['notify_email'] ?? false),
-            'notify_offline' => (bool) ($data['notify_offline'] ?? false),
-        ]);
-
         $attributes = [
             'name' => $data['name'],
-            'timezone' => $data['timezone'],
             'contact_name' => $data['contact_name'] ?? null,
             'contact_email' => $data['contact_email'] ?? null,
             'contact_phone' => $data['contact_phone'] ?? null,
-            'metadata' => $metadata,
         ];
+
+        // Hidden settings are not part of the simplified form; omission must not reset them.
+        if (array_key_exists('timezone', $data)) {
+            $attributes['timezone'] = $data['timezone'];
+        }
+
+        foreach (['audio_volume', 'notify_email', 'notify_offline'] as $preference) {
+            if (array_key_exists($preference, $data)) {
+                $attributes['metadata'] ??= $business->metadata ?? [];
+                $attributes['metadata'][$preference] = $preference === 'audio_volume'
+                    ? ($data[$preference] ?? data_get($business->metadata, $preference, 70))
+                    : (bool) $data[$preference];
+            }
+        }
 
         if ($request->hasFile('logo')) {
             $disk = config('signage.media_disk');

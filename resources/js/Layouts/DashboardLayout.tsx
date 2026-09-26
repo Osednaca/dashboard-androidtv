@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { SearchCommand } from '@/Components/app/SearchCommand';
+import { BrandLogo } from '@/Components/app/BrandLogo';
 import { TooltipProvider } from '@/Components/ui/tooltip';
 import type { PageProps } from '@/Types';
 import { storageGet, storageSet } from '@/Utils/storage';
@@ -39,7 +40,7 @@ export function DashboardLayout({
     searchCommandProps?: { endpoint?: string; placeholder?: string };
     storageKey?: string;
 }) {
-    const { flash } = usePage<PageProps>().props;
+    const { flash, app } = usePage<PageProps>().props;
     const [collapsed, setCollapsed] = useState(() => storageGet(storageKey, false));
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -90,7 +91,10 @@ export function DashboardLayout({
                     <footer className="border-t border-line px-4 py-4 text-[11px] text-faint lg:px-6">
                         {footer ?? (
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                <span>Signage TV · Plataforma de señalización digital y red publicitaria</span>
+                                <span className="flex items-center gap-2">
+                                    <BrandLogo decorative className="size-6" />
+                                    <span>{app.name} · Plataforma de señalización digital y red publicitaria</span>
+                                </span>
                                 <span className="metric">v1.0.0</span>
                             </div>
                         )}

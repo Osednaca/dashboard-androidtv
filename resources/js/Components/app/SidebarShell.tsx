@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronRight, MonitorPlay, type LucideIcon } from 'lucide-react';
+import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { BrandLogo } from '@/Components/app/BrandLogo';
 import { useState, type ReactNode } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/Components/ui/tooltip';
 import { cn } from '@/Utils/cn';
@@ -37,7 +38,6 @@ export function SidebarShell({
 }) {
     const { url } = usePage();
     const pathname = url.split('?')[0];
-    const BrandIcon = brand.icon ?? MonitorPlay;
 
     const [expanded, setExpanded] = useState<string | null>(() => {
         const match = sections
@@ -62,14 +62,13 @@ export function SidebarShell({
         >
             <Link
                 href={brand.href}
+                aria-label={`${brand.title} · ${brand.subtitle}`}
                 className={cn(
                     'flex h-16 items-center gap-3 border-b border-line px-4',
                     collapsed && 'justify-center px-0',
                 )}
             >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-control border border-accent/30 bg-accent/10 text-accent">
-                    <BrandIcon className="size-5" />
-                </span>
+                <BrandLogo decorative />
                 {!collapsed ? (
                     <div className="min-w-0">
                         <p className="truncate text-sm font-semibold tracking-tight text-fg">{brand.title}</p>

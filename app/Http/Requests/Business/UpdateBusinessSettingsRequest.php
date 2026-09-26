@@ -19,7 +19,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:160'],
-            'timezone' => ['required', 'string', 'timezone'],
+            'timezone' => ['sometimes', 'required', 'string', 'timezone'],
             'contact_name' => ['nullable', 'string', 'max:160'],
             'contact_email' => ['nullable', 'email', 'max:160'],
             'contact_phone' => ['nullable', 'string', 'max:40'],

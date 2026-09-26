@@ -40,7 +40,7 @@ class SystemDefaultsSeeder extends Seeder
     protected function seedSystemSettings(): void
     {
         $settings = [
-            ['key' => 'network.name', 'value' => 'Red Signage TV Colombia', 'group' => 'general', 'label' => 'Nombre de la red'],
+            ['key' => 'network.name', 'value' => 'Red Alter Colombia', 'group' => 'general', 'label' => 'Nombre de la red'],
             ['key' => 'network.default_timezone', 'value' => 'America/Bogota', 'group' => 'general', 'label' => 'Zona horaria por defecto'],
             ['key' => 'device.offline_after_minutes', 'value' => 15, 'group' => 'devices', 'label' => 'Minutos para marcar desconectada'],
             ['key' => 'device.heartbeat_retention_days', 'value' => 14, 'group' => 'devices', 'label' => 'Retención de latidos (días)'],

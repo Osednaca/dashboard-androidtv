@@ -2,8 +2,9 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
+import type { PageProps } from '@/Types';
 
-const appName = (import.meta.env.VITE_APP_NAME as string | undefined) ?? 'Signage TV';
+let appName = 'Alter';
 
 createInertiaApp({
     title: (title) => (title ? `${title} · ${appName}` : appName),
@@ -13,6 +14,7 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.tsx'),
         ),
     setup({ el, App, props }) {
+        appName = (props.initialPage.props as unknown as PageProps).app.name;
         createRoot(el).render(
             <>
                 <App {...props} />
