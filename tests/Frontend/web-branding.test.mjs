@@ -11,7 +11,7 @@ import * as icons from 'lucide-react';
 const require = createRequire(import.meta.url);
 const root = resolve(import.meta.dirname, '../../resources/js');
 const page = { url: '/business/dashboard', props: {
-    app: { name: 'Alter', logo_url: '/brand/alter-logo.jpg', version: '1.0.0' },
+    app: { name: 'Alter', logo_url: '/brand/alter-logo-20261003.png', version: '1.0.0' },
     flash: {}, auth: { user: null },
 } };
 const modules = new Map();
@@ -51,9 +51,10 @@ function load(file) {
 test('logo keeps complete image and accessible alternative without cropping', () => {
     const { BrandLogo } = load(resolve(root, 'Components/app/BrandLogo.tsx'));
     const html = renderToStaticMarkup(React.createElement(BrandLogo));
-    assert.match(html, /src="\/brand\/alter-logo.jpg"/);
+    assert.match(html, /src="\/brand\/alter-logo-20261003.png"/);
     assert.match(html, /alt="Alter"/);
     assert.match(html, /object-contain/);
+    assert.match(html, /width="1064" height="1064"/);
     assert.doesNotMatch(html, /object-cover|rounded-full/);
 });
 
@@ -111,7 +112,7 @@ test('sidebar retains an accessible Alter link while collapsed and expanded', ()
             sections: [], collapsed,
         }));
         assert.match(html, /aria-label="Alter · Panel del negocio"/);
-        assert.match(html, /<img [^>]*src="\/brand\/alter-logo.jpg"/);
+        assert.match(html, /<img [^>]*src="\/brand\/alter-logo-20261003.png"/);
         assert.doesNotMatch(html, /Signage TV/);
     }
 });
@@ -121,7 +122,7 @@ test('shared dashboard footer includes brand image and visible Alter name', () =
     const html = renderToStaticMarkup(React.createElement(DashboardLayout, {
         sidebar: () => null, topNavigation: () => null, children: 'Dashboard',
     }));
-    assert.match(html, /<footer[\s\S]*src="\/brand\/alter-logo.jpg"/);
+    assert.match(html, /<footer[\s\S]*src="\/brand\/alter-logo-20261003.png"/);
     assert.match(html, /Alter · Plataforma/);
     assert.doesNotMatch(html, /Signage TV/);
 });

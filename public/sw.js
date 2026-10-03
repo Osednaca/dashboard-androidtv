@@ -1,10 +1,10 @@
 /* Bump the owned cache version when changing the public offline shell. */
 const CACHE_PREFIX = 'alter-public-pwa-';
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
 const OFFLINE_URL = '/offline.html';
 const PUBLIC_FILES = new Set([
-    OFFLINE_URL, '/brand/alter-logo.jpg', '/icons/alter-192.png',
-    '/icons/alter-512.png', '/icons/alter-maskable-512.png',
+    OFFLINE_URL, '/brand/alter-logo-20261003.png', '/icons/alter-192-20261003.png',
+    '/icons/alter-512-20261003.png', '/icons/alter-maskable-512-20261003.png',
 ]);
 const HASHED_BUILD_ASSET = /^\/build\/assets\/[A-Za-z0-9_-]+-[A-Za-z0-9_-]{8,}\.(?:js|css|woff2?|png|jpe?g|svg|webp)$/;
 

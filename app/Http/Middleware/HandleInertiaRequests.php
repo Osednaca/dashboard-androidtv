@@ -51,7 +51,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'app' => [
                 'name' => config('branding.name', 'Alter'),
-                'logo_url' => config('branding.logo_url', '/brand/alter-logo.jpg'),
+                'logo_url' => config('branding.logo_url', '/brand/alter-logo-20261003.png'),
                 'env' => config('app.env'),
                 'version' => config('signage.version', '1.0.0'),
             ],

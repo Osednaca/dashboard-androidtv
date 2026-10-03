@@ -8,7 +8,7 @@ El panel se puede instalar como aplicación desde un navegador compatible. Neces
 2. Usa «Instalar aplicación» en el menú del navegador cuando esté disponible. En iPhone/iPad, usa Safari → Compartir → Añadir a pantalla de inicio.
 3. Abre Alter desde su icono. El inicio continúa usando la autenticación y los permisos del panel.
 
-La opción y los criterios de instalación dependen del navegador. El manifiesto ofrece iconos PNG de 192 y 512 píxeles y un icono maskable con margen seguro, derivados del logotipo existente. No requiere una dependencia adicional ni un botón de instalación propio.
+La opción y los criterios de instalación dependen del navegador. El manifiesto ofrece iconos PNG de 192 y 512 píxeles y un icono maskable con margen seguro, derivados del nuevo PNG canónico `alter_TV.png`. No requiere una dependencia adicional ni un botón de instalación propio.
 
 ## Datos y actualización
 
@@ -17,6 +17,8 @@ El service worker `/sw.js` se registra únicamente en compilaciones de producci�
 Solo guarda la página pública `/offline.html`, el logotipo, los iconos y recursos públicos con hash de `/build/assets/`. Rechaza respuestas `private`/`no-store`, redirecciones y contenido HTML/JSON fuera del aviso público. Las peticiones Inertia, de API, medios privados, almacenamiento, autenticación y cambios de datos quedan fuera de la caché. Las navegaciones consultan la red con `cache: no-store`, evitando también la caché HTTP del navegador; incluso sin conexión no se reproducen páginas autenticadas.
 
 Al actualizar el aviso o los iconos, incrementa `CACHE_NAME` en `public/sw.js`. La activación elimina únicamente versiones anteriores con el prefijo `alter-public-pwa-`; conserva las cachés de otros componentes. Los assets de Vite cambian de URL con su hash.
+
+Esta actualización utiliza `alter-public-pwa-v2`, logo `/brand/alter-logo-20261003.png` e iconos terminados en `-20261003.png`, incluyendo el icono de pantalla de inicio de Apple. Las rutas nuevas evitan que la caché HTTP reutilice los iconos de la marca anterior.
 
 ## Comprobación local
 
