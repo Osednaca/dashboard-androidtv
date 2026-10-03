@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePoll } from '@inertiajs/react';
 import {
     CalendarDays,
     Image as ImageIcon,
@@ -58,6 +58,7 @@ export default function BusinessHome({
     const { can } = usePermissions();
     const allOnline = kpis.screens.total > 0 && kpis.screens.online === kpis.screens.total;
 
+    usePoll(15000, { only: ['preview'] });
     const selectDevice = (id: string) => {
         router.get('/business/dashboard', { device: id }, { preserveState: true, preserveScroll: true, only: ['preview', 'selectedDeviceId'] });
     };
@@ -124,12 +125,12 @@ export default function BusinessHome({
                 <Card className="xl:col-span-6">
                     <CardHeader>
                         <div>
-                            <CardTitle>Vista previa en vivo</CardTitle>
-                            <p className="mt-0.5 text-xs text-muted">Simulación de tu pantalla con el layout actual</p>
+                            <CardTitle>Vista previa de la pantalla</CardTitle>
+                            <p className="mt-0.5 text-xs text-muted">Muestra del contenido y diseño confirmados por la TV</p>
                         </div>
                         {preview?.device.is_online ? (
                             <span className="inline-flex items-center gap-1.5 text-xs text-positive">
-                                <span className="size-1.5 animate-pulse rounded-full bg-positive" /> En reproducción
+                                <span className="size-1.5 rounded-full bg-positive" /> TV en línea
                             </span>
                         ) : null}
                     </CardHeader>

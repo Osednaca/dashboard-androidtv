@@ -28,11 +28,11 @@ class PreviewController extends Controller
             ? $devices->firstWhere('id', $request->integer('device'))
             : null;
 
-        $selected ??= $devices->first(fn (Device $device) => $device->isOnline()) ?? $devices->first();
+        $selected ??= $devices->first();
 
         return Inertia::render('Business/Preview/Index', [
             'devices' => $devices->map(fn (Device $device) => EntityPresenter::device($device))->values()->all(),
-            'preview' => $selected ? $this->preview->forDevice($selected) : null,
+            'preview' => fn () => $selected ? $this->preview->forDevice($selected) : null,
             'selectedDeviceId' => $selected?->id,
         ]);
     }

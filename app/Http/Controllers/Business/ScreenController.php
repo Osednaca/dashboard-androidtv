@@ -61,7 +61,7 @@ class ScreenController extends Controller
 
         return Inertia::render('Business/Screens/Show', [
             'device' => EntityPresenter::device($device),
-            'preview' => $this->preview->forDevice($device),
+            'preview' => fn () => $this->preview->forDevice($device),
         ]);
     }
 
