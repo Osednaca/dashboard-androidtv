@@ -14,7 +14,7 @@ export async function liveRequest(path: string, body: object, signal?: AbortSign
     return data;
 }
 
-export function LivePreview({source, embedUrl, compact = false}: {source: LiveSource; embedUrl?: string | null; compact?: boolean}) {
+export function LivePreview({source, embedUrl, compact = false, fit = 'contain'}: {source: LiveSource; embedUrl?: string | null; compact?: boolean; fit?: 'contain' | 'cover'}) {
     const video = useRef<HTMLVideoElement>(null);
     const frame = useRef<HTMLIFrameElement>(null);
     const [status, setStatus] = useState('Conectando…');
@@ -44,7 +44,7 @@ export function LivePreview({source, embedUrl, compact = false}: {source: LiveSo
         return () => { disposed = true; destroy?.(); element.pause(); element.removeAttribute('src'); element.load(); };
     }, [source.provider, source.original_url]);
     return <div className={compact ? 'relative size-full' : 'space-y-2'}>
-        {source.provider === 'hls' ? <video ref={video} controls={!compact} autoPlay muted playsInline className={compact ? 'size-full object-contain bg-black' : 'aspect-video w-full rounded-control bg-black'}
+        {source.provider === 'hls' ? <video ref={video} controls={!compact} autoPlay muted playsInline className={compact ? (fit === 'cover' ? 'size-full object-cover bg-black' : 'size-full object-contain bg-black') : 'aspect-video w-full rounded-control bg-black'}
             onPlaying={() => setStatus('Reproduciendo')} onWaiting={() => setStatus('Cargando…')} onError={() => setStatus('HLS no disponible')} />
             : <iframe ref={frame} src={embedUrl ?? source.embed_url} title="Prueba del directo" allow="autoplay; encrypted-media" referrerPolicy="strict-origin-when-cross-origin" className={compact ? 'size-full border-0' : 'h-[320px] w-full rounded-control border-0'} />}
         <p role="status" className={compact ? 'absolute right-1 top-1 max-w-full rounded bg-black/80 px-1 text-[10px] text-white' : 'text-xs text-muted'}>{compact ? 'Reproductor web: ' : ''}{status}</p>

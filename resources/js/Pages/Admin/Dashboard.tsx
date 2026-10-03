@@ -72,7 +72,7 @@ export default function Dashboard({ overview, screenPreview, previewDevices }: {
     screenPreview: ScreenPreviewData | null;
     previewDevices: Array<{ id: number; name: string }>;
 }) {
-    usePoll(15000, { only: ['screenPreview'] });
+    usePoll(3000, { only: ['screenPreview'] });
     const { auth } = usePage<PageProps>().props;
     const { can } = usePermissions();
     const firstName = (auth.user?.name ?? '').split(' ')[0];

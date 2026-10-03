@@ -18,7 +18,7 @@ export default function ScreenShow({
     device: DeviceEntity;
     preview: BusinessPreviewData | null;
 }) {
-    usePoll(15000, { only: ['preview', 'device'] });
+    usePoll(3000, { only: ['preview', 'device'] });
     const { can } = usePermissions();
 
     return (
@@ -58,7 +58,7 @@ export default function ScreenShow({
                         <CardTitle>Contenido actual</CardTitle>
                         {device.is_online ? (
                             <span className="inline-flex items-center gap-1.5 text-xs text-positive">
-                                <span className="size-1.5 animate-pulse rounded-full bg-positive" /> En reproducción
+                                <span className="size-1.5 animate-pulse rounded-full bg-positive" /> TV conectada
                             </span>
                         ) : (
                             <span className="inline-flex items-center gap-1.5 text-xs text-danger">

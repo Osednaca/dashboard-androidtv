@@ -58,7 +58,7 @@ export default function BusinessHome({
     const { can } = usePermissions();
     const allOnline = kpis.screens.total > 0 && kpis.screens.online === kpis.screens.total;
 
-    usePoll(15000, { only: ['preview'] });
+    usePoll(3000, { only: ['preview'] });
     const selectDevice = (id: string) => {
         router.get('/business/dashboard', { device: id }, { preserveState: true, preserveScroll: true, only: ['preview', 'selectedDeviceId'] });
     };

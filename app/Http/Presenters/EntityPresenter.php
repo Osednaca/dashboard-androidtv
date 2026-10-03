@@ -166,6 +166,7 @@ class EntityPresenter
                 ? ['id' => $device->currentLayout->id, 'name' => $device->currentLayout->name, 'ratio' => $device->currentLayout->ratioLabel()]
                 : null,
             'current_playlist' => $device->relationLoaded('currentPlaylist') && $device->currentPlaylist
+                && ($device->currentPlaylist->business_id === null || (int) $device->currentPlaylist->business_id === (int) $device->business_id)
                 ? ['id' => $device->currentPlaylist->id, 'name' => $device->currentPlaylist->name]
                 : null,
             'created_at' => $device->created_at?->toIso8601String(),
