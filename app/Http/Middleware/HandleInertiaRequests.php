@@ -5,8 +5,11 @@ namespace App\Http\Middleware;
 use App\Domain\Businesses\Models\Business;
 use App\Domain\Devices\Models\Device;
 use App\Domain\Operations\Models\Alert;
+use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
+use Symfony\Component\HttpFoundation\Response;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -14,6 +17,17 @@ class HandleInertiaRequests extends Middleware
      * The root template that is loaded on the first page visit.
      */
     protected $rootView = 'app';
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = parent::handle($request, $next);
+
+        if ($request->user()) {
+            $response->headers->set('Cache-Control', 'no-store, private');
+        }
+
+        return $response;
+    }
 
     /**
      * Determine the current asset version.
@@ -31,6 +45,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        Inertia::encryptHistory($user !== null);
 
         return [
             ...parent::share($request),
