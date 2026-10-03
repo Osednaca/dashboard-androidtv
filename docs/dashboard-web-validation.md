@@ -4,7 +4,7 @@ El dashboard corrige el cambio de cuenta en un mismo navegador, permite mostrar/
 
 ## Despliegue en EasyPanel
 
-El usuario realiza el despliegue. Los cambios están en la rama local `codex/dashboard-web-reliability`, basada en `4ccea73` e incluyendo los valores verticales iniciales de las TV nuevas. No se hizo push, PR ni publicación de esta función web.
+El usuario realiza el despliegue. Los cambios están publicados en [codex/dashboard-web-reliability](https://github.com/Osednaca/dashboard-androidtv/tree/codex/dashboard-web-reliability), basada en `4ccea73` e incluyendo los valores verticales iniciales de las TV nuevas. El push con la autenticación Git configurada fue autorizado explícitamente y su primer commit remoto `0be7412` se verificó idéntico al local. No se hizo PR, merge ni despliegue en EasyPanel.
 
 1. Publicar el backend y sus assets mediante el proceso habitual de EasyPanel. El `Dockerfile` ejecuta `npm run build`; `docker/entrypoint.sh` prepara almacenamiento, pero **no ejecuta migraciones**.
 2. En la consola de la aplicación desplegada, con las variables de producción correctas, ejecutar `php artisan migrate --force`. No se requiere volver a cargar seeders ni crear cuentas. No ejecutar resets de la base de datos.
