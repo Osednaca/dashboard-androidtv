@@ -73,6 +73,12 @@ Si ya ejecutaste el seeder anterior antes del fallo de Faker, pudo haber creado 
 
 Los datos demo solo se cargan con `APP_ENV=local` o `testing` y requieren las dependencias de desarrollo. Después de preparar producción, crea un negocio y una ubicación desde el dashboard y asigna el código que muestra tu TV.
 
+## Orientación inicial de las TV nuevas
+
+Al vincular una TV nueva, la API le asigna un layout exclusivo vertical con giro de 90° y división superior/inferior. Conserva la proporción y los demás ajustes del layout predeterminado; si no existe, usa 70/30 con negocio arriba y publicidad abajo. Una zona de negocio izquierda/superior se convierte en superior y una derecha/inferior en inferior. Los layouts compartidos, las TV existentes y sus giros elegidos se conservan, incluidos los reintentos de activación.
+
+Este cambio está preparado y probado localmente; su despliegue del backend está pendiente. No requiere migraciones ni seeders. El APK actualizado debe instalarse también para mostrar la activación y el menú verticales desde el primer inicio.
+
 ## Compatibilidad de fechas de activación en Android TV
 
 La API de activación devuelve `expires_at` en UTC con terminación `Z` (por ejemplo, `2026-09-17T20:52:02Z`). Esto conserva el instante de vencimiento y permite que lo interpreten también las implementaciones antiguas de `Instant.parse` de Android que rechazan `+00:00`. La zona horaria del TV puede continuar en Bogotá y la del servidor en UTC. Referencia: [lector de instantes de Android API 30](https://android.googlesource.com/platform/prebuilts/fullsdk/sources/android-30/+/refs/heads/androidx-core-release/java/time/format/DateTimeFormatterBuilder.java#3253).

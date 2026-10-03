@@ -47,18 +47,22 @@ class ConfirmDeviceActivation
             $deviceUuid ??= $activation->device_uuid ?? (string) Str::uuid();
 
             $device = $activation->device ?? new Device(['uuid' => $deviceUuid]);
+            $deviceName = $name ?: ($activation->device_name ?: 'Pantalla '.substr($deviceUuid, 0, 4));
+            $layoutId = $device->exists
+                ? ($device->current_layout_id ?? Layout::query()->where('is_default', true)->value('id'))
+                : $this->createPortraitLayout($deviceName)->id;
 
             $device->fill([
                 'business_id' => $activation->business_id,
                 'location_id' => $activation->location_id,
-                'name' => $name ?: ($activation->device_name ?: 'Pantalla '.substr($deviceUuid, 0, 4)),
+                'name' => $deviceName,
                 'uuid' => $deviceUuid,
                 'activation_code' => $activation->code,
                 'app_version' => $appVersion,
                 'status' => DeviceStatus::Online,
                 'last_seen_at' => now(),
                 'last_ip' => $ip,
-                'current_layout_id' => $device->current_layout_id ?? Layout::query()->where('is_default', true)->value('id'),
+                'current_layout_id' => $layoutId,
             ])->save();
 
             $token = $device->issueToken();
@@ -74,5 +78,27 @@ class ConfirmDeviceActivation
 
             return ['device' => $device, 'token' => $token];
         });
+    }
+
+    private function createPortraitLayout(string $deviceName): Layout
+    {
+        $default = Layout::query()->where('is_default', true)->first();
+        $configuration = $default?->configuration ?? [];
+        $businessFirst = ! in_array($configuration['business_area'] ?? 'left', ['right', 'bottom'], true);
+        $configuration['rotation'] = 90;
+        $configuration['split'] = 'top_bottom';
+        $configuration['business_area'] = $businessFirst ? 'top' : 'bottom';
+        $configuration['advertising_area'] = $businessFirst ? 'bottom' : 'top';
+        $ratio = $default?->business_percentage ?? 70;
+
+        // Each new TV owns its portrait default; shared and existing layouts stay intact.
+        return Layout::query()->create([
+            'name' => mb_substr('TV '.$deviceName.' · Superior / inferior · '.$ratio.'/'.(100 - $ratio).' · Vertical', 0, 255),
+            'orientation' => 'portrait',
+            'business_percentage' => $ratio,
+            'advertising_percentage' => $default?->advertising_percentage ?? 30,
+            'configuration' => $configuration,
+            'is_default' => false,
+        ]);
     }
 }

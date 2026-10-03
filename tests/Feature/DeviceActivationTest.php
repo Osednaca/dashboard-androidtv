@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Domain\Devices\Actions\AssignActivation;
+use App\Domain\Devices\Models\Device;
 use App\Domain\Devices\Models\DeviceActivation;
 use App\Domain\Locations\Models\Location;
+use App\Domain\Media\Models\Layout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class DeviceActivationTest extends TestCase
@@ -90,6 +93,132 @@ class DeviceActivationTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('device_activations', ['id' => $activation->id, 'status' => 'claimed']);
+    }
+
+    #[DataProvider('businessAreas')]
+    public function test_first_manifest_is_private_portrait_and_preserves_shared_defaults(string $businessArea, string $expectedArea): void
+    {
+        $default = Layout::query()->create([
+            'name' => 'Compartido', 'orientation' => 'landscape', 'business_percentage' => 60,
+            'advertising_percentage' => 40, 'is_default' => true,
+            'configuration' => [
+                'business_area' => $businessArea, 'advertising_area' => 'right', 'split' => 'left_right',
+                'rotation' => 0, 'audio_mode' => 'advertising', 'transition' => 'soft_zoom',
+            ],
+        ]);
+        $original = $default->fresh()->getAttributes();
+        $other = Device::factory()->create(['current_layout_id' => $default->id]);
+        $activation = $this->assignedActivation();
+        $payload = ['code' => $activation->code, 'device_uuid' => $activation->device_uuid];
+        $first = $this->postJson('/api/v1/device/activation/confirm', $payload)->assertCreated();
+        $device = $activation->fresh()->device;
+        $this->withToken($first->json('token'))->getJson('/api/v1/device/manifest')->assertOk()
+            ->assertJsonPath('manifest.payload.layout.id', $device->current_layout_id)
+            ->assertJsonPath('manifest.payload.layout.orientation', 'portrait')
+            ->assertJsonPath('manifest.payload.layout.business_percentage', 60)
+            ->assertJsonPath('manifest.payload.layout.advertising_percentage', 40)
+            ->assertJsonPath('manifest.payload.layout.configuration.rotation', 90)
+            ->assertJsonPath('manifest.payload.layout.configuration.split', 'top_bottom')
+            ->assertJsonPath('manifest.payload.layout.configuration.business_area', $expectedArea)
+            ->assertJsonPath('manifest.payload.layout.configuration.advertising_area', $expectedArea === 'top' ? 'bottom' : 'top')
+            ->assertJsonPath('manifest.payload.layout.configuration.audio_mode', 'advertising')
+            ->assertJsonPath('manifest.payload.layout.configuration.transition', 'soft_zoom');
+
+        $this->assertNotSame($default->id, $device->current_layout_id);
+        $this->assertFalse($device->currentLayout->is_default);
+        $this->assertSame($original, $default->fresh()->getAttributes());
+        $this->assertSame($default->id, $other->fresh()->current_layout_id);
+
+        $retry = $this->postJson('/api/v1/device/activation/confirm', $payload)->assertCreated()
+            ->assertJsonPath('device.id', $device->id)
+            ->assertJsonPath('device.layout_id', $device->current_layout_id);
+        $this->withToken($retry->json('token'))->getJson('/api/v1/device/manifest')->assertOk()
+            ->assertJsonPath('manifest.payload.layout.configuration.rotation', 90);
+        $this->assertDatabaseCount('layouts', 2);
+        $this->assertDatabaseCount('devices', 2);
+    }
+
+    public static function businessAreas(): array
+    {
+        return [
+            'left becomes top' => ['left', 'top'], 'top stays top' => ['top', 'top'],
+            'right becomes bottom' => ['right', 'bottom'], 'bottom stays bottom' => ['bottom', 'bottom'],
+        ];
+    }
+
+    public function test_activation_without_a_shared_default_returns_a_valid_portrait_manifest(): void
+    {
+        $activation = $this->assignedActivation();
+        $response = $this->postJson('/api/v1/device/activation/confirm', [
+            'code' => $activation->code, 'device_uuid' => $activation->device_uuid,
+        ])->assertCreated();
+        $this->withToken($response->json('token'))->getJson('/api/v1/device/manifest')->assertOk()
+            ->assertJsonPath('manifest.payload.layout.orientation', 'portrait')
+            ->assertJsonPath('manifest.payload.layout.configuration.rotation', 90)
+            ->assertJsonPath('manifest.payload.layout.configuration.split', 'top_bottom')
+            ->assertJsonPath('manifest.payload.layout.configuration.business_area', 'top')
+            ->assertJsonPath('manifest.payload.layout.configuration.advertising_area', 'bottom')
+            ->assertJsonPath('manifest.payload.layout.business_percentage', 70)
+            ->assertJsonPath('manifest.payload.layout.advertising_percentage', 30);
+        $this->assertFalse($activation->fresh()->device->currentLayout->is_default);
+        $this->assertDatabaseCount('layouts', 1);
+    }
+
+    #[DataProvider('existingRotations')]
+    public function test_existing_device_activation_and_retries_preserve_its_explicit_layout(int $rotation): void
+    {
+        $layout = Layout::query()->create([
+            'name' => 'Elegido', 'orientation' => $rotation === 0 ? 'landscape' : 'portrait',
+            'business_percentage' => 80, 'advertising_percentage' => 20, 'is_default' => false,
+            'configuration' => ['rotation' => $rotation, 'split' => 'left_right', 'audio_mode' => 'none'],
+        ]);
+        $device = Device::factory()->create(['current_layout_id' => $layout->id]);
+        $activation = $this->assignedActivation($device);
+        $original = $layout->fresh()->getAttributes();
+
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $response = $this->postJson('/api/v1/device/activation/confirm', [
+                'code' => $activation->code, 'device_uuid' => $device->uuid,
+            ])->assertCreated()->assertJsonPath('device.id', $device->id)->assertJsonPath('device.layout_id', $layout->id);
+            $this->withToken($response->json('token'))->getJson('/api/v1/device/manifest')->assertOk()
+                ->assertJsonPath('manifest.payload.layout.configuration.rotation', $rotation)
+                ->assertJsonPath('manifest.payload.layout.configuration.split', 'left_right');
+        }
+        $this->assertSame($original, $layout->fresh()->getAttributes());
+        $this->assertDatabaseCount('layouts', 1);
+        $this->assertDatabaseCount('devices', 1);
+    }
+
+    public static function existingRotations(): array
+    {
+        return ['landscape' => [0], 'opposite portrait' => [270]];
+    }
+
+    public function test_existing_device_without_a_layout_keeps_the_shared_default_fallback(): void
+    {
+        $default = Layout::query()->create([
+            'name' => 'Compartido', 'orientation' => 'landscape', 'business_percentage' => 70,
+            'advertising_percentage' => 30, 'is_default' => true, 'configuration' => ['rotation' => 0],
+        ]);
+        $device = Device::factory()->create(['current_layout_id' => null]);
+        $activation = $this->assignedActivation($device);
+        $this->postJson('/api/v1/device/activation/confirm', [
+            'code' => $activation->code, 'device_uuid' => $device->uuid,
+        ])->assertCreated()->assertJsonPath('device.layout_id', $default->id);
+        $this->assertDatabaseCount('layouts', 1);
+    }
+
+    private function assignedActivation(?Device $device = null): DeviceActivation
+    {
+        $location = Location::factory()->create($device ? ['business_id' => $device->business_id] : []);
+
+        return DeviceActivation::query()->create([
+            'code' => 'ABC123', 'status' => 'pending', 'expires_at' => now()->addHour(),
+            'business_id' => $device?->business_id ?? $location->business_id,
+            'location_id' => $device?->location_id ?? $location->id,
+            'device_uuid' => $device?->uuid ?? '77777777-7777-4777-8777-777777777777',
+            'device_id' => $device?->id,
+        ]);
     }
 
     public function test_activation_fails_when_code_is_not_assigned_to_a_business(): void
