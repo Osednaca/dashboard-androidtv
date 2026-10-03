@@ -72,7 +72,7 @@ export default function Dashboard({ overview, screenPreview, previewDevices }: {
     screenPreview: ScreenPreviewData | null;
     previewDevices: Array<{ id: number; name: string }>;
 }) {
-    usePoll(15000, { only: ['screenPreview'] });
+    usePoll(3000, { only: ['screenPreview'] });
     const { auth } = usePage<PageProps>().props;
     const { can } = usePermissions();
     const firstName = (auth.user?.name ?? '').split(' ')[0];
@@ -337,9 +337,16 @@ export default function Dashboard({ overview, screenPreview, previewDevices }: {
                     <CardHeader>
                         <div>
                             <CardTitle>Vista previa de pantalla</CardTitle>
-                            <p className="mt-0.5 text-xs text-muted">Muestra del contenido y diseño confirmados por la TV</p>
+                            <p className="mt-0.5 text-xs text-muted">
+                                {screenPreview?.playback ? 'Último estado recibido de la TV'
+                                    : screenPreview ? 'Muestra del contenido y diseño confirmados por la TV'
+                                    : 'Selecciona una pantalla para consultar su estado'}
+                            </p>
                         </div>
-                        <span className="text-xs text-muted">Vista aproximada</span>
+                        <span className="text-xs text-muted">
+                            {screenPreview?.playback ? 'Reporte de la TV'
+                                : screenPreview ? 'Vista aproximada' : 'Sin pantalla'}
+                        </span>
                     </CardHeader>
                     <CardContent>
                         <label className="mb-3 block text-xs text-muted">

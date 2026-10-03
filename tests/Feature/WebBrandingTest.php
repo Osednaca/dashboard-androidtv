@@ -12,15 +12,24 @@ class WebBrandingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_canonical_logo_is_the_exact_supplied_transparent_png(): void
+    {
+        $logo = public_path('brand/alter-logo-20261003.png');
+
+        $this->assertSame('f80febb0b718a6ebb15c3b14697b79adb9ece633afeb0b96728ef322df9bd07d', hash_file('sha256', $logo));
+        $metadata = getimagesize($logo);
+        $this->assertSame([1064, 1064, 'image/png'], [$metadata[0], $metadata[1], $metadata['mime']]);
+    }
+
     public function test_login_uses_alter_without_changing_technical_application_identity(): void
     {
         config(['app.name' => 'Signage TV', 'session.cookie' => 'signage-tv-session', 'cache.prefix' => 'signage-tv-cache', 'database.redis.options.prefix' => 'signage-tv-redis']);
 
         $this->get('/login')->assertOk()
             ->assertSee('<title inertia>Alter</title>', false)
-            ->assertSee('rel="icon" type="image/jpeg" href="/brand/alter-logo.jpg"', false)
+            ->assertSee('rel="icon" type="image/png" href="/brand/alter-logo-20261003.png"', false)
             ->assertInertia(fn (Assert $page) => $page->component('Auth/Login')
-                ->where('app.name', 'Alter')->where('app.logo_url', '/brand/alter-logo.jpg'));
+                ->where('app.name', 'Alter')->where('app.logo_url', '/brand/alter-logo-20261003.png'));
 
         $this->assertSame('Signage TV', config('app.name'));
         $this->assertSame('signage-tv-session', config('session.cookie'));
@@ -33,7 +42,7 @@ class WebBrandingTest extends TestCase
         config(['branding' => []]);
         $this->get('/login')->assertOk()->assertSee('<title inertia>Alter</title>', false)
             ->assertInertia(fn (Assert $page) => $page->component('Auth/Login')
-                ->where('app.name', 'Alter')->where('app.logo_url', '/brand/alter-logo.jpg'));
+                ->where('app.name', 'Alter')->where('app.logo_url', '/brand/alter-logo-20261003.png'));
     }
 
     public function test_migration_updates_only_legacy_name_preserving_other_fields_and_is_idempotent(): void

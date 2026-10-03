@@ -9,8 +9,8 @@ export function BrandLogo({ className, decorative = false }: { className?: strin
         <img
             src={app.logo_url}
             alt={decorative ? '' : app.name}
-            width={506}
-            height={507}
+            width={1064}
+            height={1064}
             className={cn('size-9 shrink-0 object-contain', className)}
         />
     );

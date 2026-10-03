@@ -82,3 +82,87 @@ test('live sources use the embedded player rather than an image URL', () => {
     assert.doesNotMatch(html, /<img/);
     assert.match(html, /Vista aproximada/);
 });
+
+const { playbackIsFresh, playbackPositionMs } = load(resolve(root, 'Utils/playback-preview.ts'));
+const reportedZone = {
+    source: 'manifest', state: 'playing', manifest_version: '99', item_id: 'second-item',
+    media_asset_id: 2, quick_play_device_id: null, command_id: null, live_creative_id: null,
+    position_ms: 4000, duration_ms: 10000, live_state: null, media: video,
+};
+const report = {
+    fresh: true, age_ms: 1000, received_at: '2026-10-03T12:00:00Z', session_id: 'sample', sequence: 3,
+    scene: 'playback', layout: { ...preview.layout, width_px: 1080, height_px: 1920 },
+    zones: { business: reportedZone },
+};
+const actual = { ...preview, playback_reported: true, status: 'reported', playback: report,
+    layout: { ...preview.layout, width_px: 1080, height_px: 1920 } };
+
+test('actual report uses logical dimensions, crop and current source without a video loop', () => {
+    const html = render(actual);
+    assert.match(html, /aspect-ratio:1080 \/ 1920/);
+    assert.match(html, /Estado reportado/);
+    assert.match(html, /Reproduciendo/);
+    assert.match(html, /<video[^>]*object-cover/);
+    assert.doesNotMatch(html, /<video[^>]*loop|<video[^>]*autoPlay|\/confirmed.jpg/);
+    assert.match(html, /data-preview-zone="business"/);
+    assert.doesNotMatch(html, /data-preview-zone="advertising"/);
+});
+
+test('fullscreen quick play replaces normal zones and previous playlist content', () => {
+    const quick = { ...reportedZone, source: 'quick_play', item_id: null, media: { ...video, id: 9, url: '/quick.mp4' } };
+    const html = render({ ...actual, playback: { ...report, zones: { business: reportedZone, fullscreen: quick } } });
+    assert.match(html, /data-preview-zone="fullscreen"/);
+    assert.match(html, /Reproducción inmediata/);
+    assert.match(html, /\/quick.mp4/);
+    assert.doesNotMatch(html, /data-preview-zone="business"|data-preview-zone="advertising"|\/confirmed.mp4/);
+});
+
+test('all non-playback scenes mask even media left in a malformed response', () => {
+    for (const scene of ['settings', 'pin', 'background', 'activation']) {
+        const html = render({ ...actual, playback: { ...report, scene } });
+        assert.doesNotMatch(html, /<video|<img|<iframe|data-preview-zone=/);
+        assert.match(html, /Configuración abierta|Acceso administrativo|segundo plano|TV en activación/);
+    }
+});
+
+test('stale and server-unverified state hide old media instead of falling back to estimates', () => {
+    for (const staleReport of [{ ...report, fresh: false }, { ...report, age_ms: 15001 }]) {
+        const html = render({ ...actual, playback: staleReport });
+        assert.match(html, /Reporte vencido/);
+        assert.doesNotMatch(html, /<video|<img|<iframe|data-preview-zone=/);
+        assert.doesNotMatch(html, /Vista aproximada del contenido confirmado/);
+    }
+});
+
+test('video position extrapolates playing reports only and never crosses item duration', () => {
+    assert.equal(playbackPositionMs(reportedZone, 1000), 5000);
+    assert.equal(playbackPositionMs(reportedZone, 12000), 10000);
+    for (const state of ['paused', 'buffering', 'error']) {
+        assert.equal(playbackPositionMs({ ...reportedZone, state }, 12000), 4000);
+    }
+    assert.equal(playbackPositionMs({ ...reportedZone, position_ms: null }, 1000), null);
+    assert.equal(playbackPositionMs({ ...reportedZone, position_ms: undefined }, 1000), null);
+    assert.equal(playbackIsFresh(report, 14000), true);
+    assert.equal(playbackIsFresh(report, 14001), false);
+    assert.equal(playbackIsFresh({ ...report, fresh: false }, 0), false);
+});
+
+test('live and fallback identify actual source while disclosing separate browser buffering', () => {
+    const live = { id: 3, type: 'live_stream', url: '/live', live: { provider: 'youtube', original_url: 'https://www.youtube.com/watch?v=abcdefghijk', source_id: 'abcdefghijk', embed_url: '/live/embed/3?signature=test' } };
+    const html = render({ ...actual, playback: { ...report, zones: { advertising: { ...reportedZone, source: 'live', media: live } } } });
+    assert.match(html, /<iframe/);
+    assert.match(html, /propio búfer/);
+    const fallback = render({ ...actual, playback: { ...report, zones: { advertising: { ...reportedZone, source: 'live_fallback', media: image } } } });
+    assert.match(fallback, /Reserva de directo/);
+    assert.match(fallback, /<img/);
+    assert.doesNotMatch(fallback, /<iframe/);
+    const hls = render({ ...actual, playback: { ...report, zones: { advertising: { ...reportedZone, source: 'live', media: { ...live, live: { provider: 'hls', original_url: '/channel.m3u8' } } } } } });
+    assert.match(hls, /object-cover bg-black/);
+});
+
+test('preview pages poll only their scoped preview every three seconds', () => {
+    for (const file of ['Pages/Admin/Dashboard.tsx', 'Pages/Business/Home.tsx', 'Pages/Business/Preview/Index.tsx', 'Pages/Business/Screens/Show.tsx']) {
+        const source = readFileSync(resolve(root, file), 'utf8');
+        assert.match(source, /usePoll\(3000, \{ only: \[/);
+    }
+});

@@ -2,7 +2,11 @@
 
 namespace App\Domain\Devices\Services;
 
+use App\Domain\Businesses\Models\Business;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Devices\Models\DevicePlaybackState;
+use App\Domain\Media\Models\MediaAsset;
+use App\Domain\Playlists\Models\Playlist;
 use App\Http\Presenters\EntityPresenter;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -10,12 +14,18 @@ use Illuminate\Support\Carbon;
 /** Read the snapshot acknowledged by this TV; never rebuild on a preview GET. */
 class DevicePreviewService
 {
+    public function __construct(private DevicePlaybackStateService $playback) {}
+
     public function forDevice(Device $device): array
     {
         $device->loadMissing(['business', 'location', 'currentLayout', 'currentPlaylist']);
         $manifest = $device->current_manifest_version === null ? null
             : $device->manifests()->where('version', $device->current_manifest_version)->first();
         $payload = $manifest?->payload ?? [];
+        if ($manifest && ! $this->snapshotBelongsToCurrentBusiness($device, $payload)) {
+            $manifest = null;
+            $payload = [];
+        }
         $at = now(data_get($payload, 'device.timezone', config('app.timezone')));
         $assets = collect($payload['assets'] ?? [])->keyBy('id');
         $playlist = $payload['business_playlist'] ?? null;
@@ -46,7 +56,7 @@ class DevicePreviewService
             }
         }
 
-        return [
+        $preview = [
             'device' => EntityPresenter::device($device),
             'layout' => $this->layout($payload['layout'] ?? null),
             'business_media' => $item ? $assets->get($item['media_asset_id']) : null,
@@ -58,7 +68,54 @@ class DevicePreviewService
             'status' => $manifest ? 'approximate' : 'unconfirmed',
             'playback_reported' => false,
             'checked_at' => now()->toIso8601String(),
+            'playback' => null,
         ];
+
+        $report = $this->playback->preview($device);
+        if ($report === null) {
+            return $preview;
+        }
+        $preview['playback'] = $report;
+        $preview['playback_reported'] = true;
+        $preview['status'] = $report['fresh'] ? 'reported' : 'stale';
+        // A recorded state never falls back to an inferred playlist item, even
+        // when stale or when an administrative screen replaces playback.
+        $preview['business_media'] = $report['zones']['business']['media'] ?? null;
+        $advertising = $report['zones']['advertising'] ?? null;
+        $preview['advertising'] = $advertising && $advertising['media']
+            ? ['media' => $advertising['media'], 'campaign_name' => $advertising['campaign_name'] ?? 'Contenido reportado'] : null;
+        $preview['playlist'] = null;
+        $reportedLayout = $report['layout'] ?? null;
+        $preview['manifest_version'] = $reportedLayout['manifest_version'] ?? null;
+        $preview['layout'] = $reportedLayout ? $reportedLayout + [
+            'id' => null,
+            'name' => 'Diseño reportado por la TV',
+            'orientation' => $reportedLayout['rotation'] % 180 ? 'portrait' : 'landscape',
+            'advertising_percentage' => 100 - $reportedLayout['business_percentage'],
+            'ratio' => $reportedLayout['business_percentage'].'/'.(100 - $reportedLayout['business_percentage']),
+        ] : null;
+
+        return $preview;
+    }
+
+    /** A retained pointer after reassignment cannot reveal the previous tenant's snapshot. */
+    private function snapshotBelongsToCurrentBusiness(Device $device, array $payload): bool
+    {
+        $previous = DevicePlaybackState::query()->where('device_id', $device->id)->first();
+        $businessId = $device->business_id === null ? null : (int) $device->business_id;
+        if ($previous && $previous->business_id !== $businessId) {
+            return false;
+        }
+        $ids = collect($payload['assets'] ?? [])->pluck('id');
+        $assets = MediaAsset::query()->whereIn('id', $ids)->get();
+        if ($assets->count() !== $ids->unique()->count() || $assets->contains(fn (MediaAsset $asset) => $asset->owner_type === (new Business)->getMorphClass() && (int) $asset->owner_id !== (int) $device->business_id)) {
+            return false;
+        }
+        $playlistIds = collect($payload['scheduled_playlists'] ?? [])->pluck('id');
+        $playlistIds->push(data_get($payload, 'business_playlist.id'));
+
+        return ! Playlist::query()->whereIn('id', $playlistIds->filter())->whereNotNull('business_id')
+            ->where('business_id', '!=', $device->business_id)->exists();
     }
 
     private function layout(?array $layout): ?array

@@ -18,7 +18,7 @@ export default function PreviewIndex({
     preview: BusinessPreviewData | null;
     selectedDeviceId: number | null;
 }) {
-    usePoll(15000, { only: ['preview'] });
+    usePoll(3000, { only: ['preview'] });
     const select = (id: number) => {
         router.get('/business/preview', { device: id }, { preserveState: true, preserveScroll: true, only: ['preview', 'selectedDeviceId'] });
     };
@@ -30,7 +30,7 @@ export default function PreviewIndex({
             <PageHeader
                 eyebrow="Pantallas"
                 title="Vista previa de pantallas"
-                description="Contenido y diseño confirmados por la TV. La reproducción sincronizada estará disponible con la actualización de Android."
+                description="Estado y contenido reportados por la TV, con actualización cada tres segundos."
             />
 
             <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-12">

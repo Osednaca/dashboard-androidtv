@@ -5,8 +5,11 @@ namespace Tests\Feature;
 use App\Domain\Businesses\Models\Business;
 use App\Domain\Devices\Enums\ManifestStatus;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Devices\Models\DevicePlaybackState;
+use App\Domain\Devices\Services\DevicePlaybackStateService;
 use App\Domain\Devices\Services\DevicePreviewService;
 use App\Domain\Media\Models\MediaAsset;
+use App\Domain\Playlists\Models\Playlist;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesUsers;
@@ -41,6 +44,14 @@ class DevicePreviewTest extends TestCase
 
     private function confirm(Device $device, array $payload): void
     {
+        // Delivered fixture assets are persisted public/admin media. Private
+        // business-owned sources are created explicitly by ownership regressions.
+        foreach ($payload['assets'] ?? [] as $asset) {
+            if (! MediaAsset::query()->find($asset['id'])) {
+                MediaAsset::factory()->create(['id' => $asset['id'], 'type' => $asset['type'],
+                    'mime_type' => $asset['mime_type'], 'owner_type' => null, 'owner_id' => null]);
+            }
+        }
         $device->manifests()->create(['version' => '100', 'checksum' => hash('sha256', json_encode($payload)),
             'payload' => $payload, 'status' => ManifestStatus::Current, 'generated_at' => now()]);
         $device->forceFill(['current_manifest_version' => '100'])->save();
@@ -178,5 +189,146 @@ class DevicePreviewTest extends TestCase
             'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
             'X-Inertia' => 'true', 'X-Inertia-Partial-Component' => 'Business/Preview/Index', 'X-Inertia-Partial-Data' => 'preview',
         ])->assertOk()->assertJsonPath('props.preview.device.id', $own->id)->assertJsonMissingPath('props.devices');
+    }
+
+    private function reportedState(array $overrides = []): array
+    {
+        return array_replace([
+            'fresh' => true, 'received_at' => now()->toIso8601String(), 'age_ms' => 1000,
+            'session_id' => 'fixture', 'sequence' => 2, 'scene' => 'playback',
+            'layout' => ['manifest_version' => '99', 'rotation' => 270, 'split' => 'side_by_side',
+                'business_percentage' => 60, 'business_first' => true, 'width_px' => 1080, 'height_px' => 1920],
+            'zones' => ['business' => ['source' => 'manifest', 'state' => 'paused', 'manifest_version' => '99',
+                'position_ms' => 4321, 'media' => ['id' => 42, 'type' => 'video', 'url' => '/actual-item.mp4']]],
+        ], $overrides);
+    }
+
+    public function test_actual_report_replaces_inferred_content_layout_and_manifest_without_writes(): void
+    {
+        $device = Device::factory()->create();
+        $this->confirm($device, $this->payload());
+        $before = $device->fresh()->getAttributes();
+        $this->mock(DevicePlaybackStateService::class)->shouldReceive('preview')->once()
+            ->withArgs(fn (Device $candidate) => $candidate->id === $device->id)
+            ->andReturn($this->reportedState());
+
+        $preview = app(DevicePreviewService::class)->forDevice($device);
+
+        $this->assertSame('reported', $preview['status']);
+        $this->assertTrue($preview['playback_reported']);
+        $this->assertSame('/actual-item.mp4', $preview['business_media']['url']);
+        $this->assertNull($preview['advertising']);
+        $this->assertNull($preview['playlist']);
+        $this->assertSame('99', $preview['manifest_version']);
+        $this->assertSame(270, $preview['layout']['rotation']);
+        $this->assertSame('60/40', $preview['layout']['ratio']);
+        $this->assertSame(1080, $preview['layout']['width_px']);
+        $this->assertSame(4321, $preview['playback']['zones']['business']['position_ms']);
+        $this->assertSame($before, $device->fresh()->getAttributes());
+        $this->assertDatabaseCount('device_manifests', 1);
+    }
+
+    public function test_stale_and_non_playback_reports_never_show_estimated_playlist_content(): void
+    {
+        $device = Device::factory()->create();
+        $this->confirm($device, $this->payload());
+        $service = $this->mock(DevicePlaybackStateService::class);
+        foreach (['settings', 'pin', 'background', 'activation', 'playback'] as $scene) {
+            $fresh = $scene !== 'playback';
+            $service->shouldReceive('preview')->once()->andReturn($this->reportedState([
+                'fresh' => $fresh, 'scene' => $scene, 'zones' => [], 'age_ms' => $fresh ? 0 : 16000,
+            ]));
+            $preview = app(DevicePreviewService::class)->forDevice($device);
+            $this->assertSame($fresh ? 'reported' : 'stale', $preview['status']);
+            $this->assertNull($preview['business_media']);
+            $this->assertNull($preview['advertising']);
+            $this->assertSame([], $preview['playback']['zones']);
+        }
+    }
+
+    public function test_business_preview_polls_real_validated_state_then_hides_it_after_fifteen_seconds(): void
+    {
+        $business = Business::factory()->create();
+        $device = Device::factory()->online()->create(['business_id' => $business->id]);
+        $video = MediaAsset::factory()->video()->create(['owner_type' => $business->getMorphClass(), 'owner_id' => $business->id]);
+        $payload = $this->payload();
+        $payload['business_playlist']['items'] = [['id' => 20, 'media_asset_id' => $video->id, 'order' => 1]];
+        $payload['assets'] = [['id' => $video->id, 'type' => 'video', 'url' => '/actual-video.mp4', 'mime_type' => 'video/mp4']];
+        $payload['advertising_playlist'] = ['campaigns' => []];
+        $this->confirm($device, $payload);
+        app(DevicePlaybackStateService::class)->accept($device, [
+            'schema_version' => 1, 'session_id' => '97b13501-cd75-44bc-b11b-55b8a0effc98', 'sequence' => 1, 'sample_age_ms' => 0,
+            'scene' => 'playback', 'layout' => array_replace($this->reportedState()['layout'], ['manifest_version' => '100']),
+            'zones' => ['business' => ['source' => 'manifest', 'state' => 'paused', 'manifest_version' => '100',
+                'item_id' => 'business-20', 'media_asset_id' => $video->id, 'position_ms' => 4321, 'duration_ms' => 10000]],
+        ]);
+        $before = $device->fresh()->getAttributes();
+        $user = $this->businessUser($business);
+        $this->actingAs($user)->get('/business/preview')->assertOk()->assertInertia(fn ($page) => $page
+            ->where('preview.status', 'reported')->where('preview.playback.zones.business.position_ms', 4321)
+            ->where('preview.business_media.url', '/actual-video.mp4'));
+        $this->travel(16)->seconds();
+        $this->actingAs($user)->get('/business/preview')->assertOk()->assertInertia(fn ($page) => $page
+            ->where('preview.status', 'stale')->where('preview.business_media', null)->has('preview.playback.zones', 0));
+        $this->assertSame($before, $device->fresh()->getAttributes());
+        $this->assertDatabaseCount('device_playback_states', 1);
+    }
+
+    public function test_legacy_fallback_accepts_numeric_string_business_identity_but_rejects_a_different_business(): void
+    {
+        $device = Device::factory()->create();
+        $this->confirm($device, $this->payload());
+        DevicePlaybackState::query()->create([
+            'device_id' => $device->id, 'business_id' => $device->business_id,
+            'session_id' => '97b13501-cd75-44bc-b11b-55b8a0effc98', 'sequence' => 1,
+            'payload' => [], 'received_at' => now(),
+        ]);
+        $this->mock(DevicePlaybackStateService::class)->shouldReceive('preview')->twice()->andReturnNull();
+        $device->setAttribute('business_id', (string) $device->business_id);
+
+        $preview = app(DevicePreviewService::class)->forDevice($device);
+
+        $this->assertSame('approximate', $preview['status']);
+        $this->assertSame('/confirmed.mp4', $preview['business_media']['url']);
+        $this->assertSame('Lista confirmada', $preview['playlist']['name']);
+
+        $device->setAttribute('business_id', (string) Business::factory()->create()->id);
+        $preview = app(DevicePreviewService::class)->forDevice($device);
+
+        $this->assertSame('unconfirmed', $preview['status']);
+        $this->assertNull($preview['business_media']);
+        $this->assertNull($preview['playlist']);
+        $this->assertNull($preview['manifest_version']);
+    }
+
+    public function test_reassignment_or_deleted_sources_cannot_leak_prior_business_urls_or_playlist_names(): void
+    {
+        $device = Device::factory()->online()->create();
+        $oldPlaylist = Playlist::query()->create(['business_id' => $device->business_id, 'name' => 'Private old business playlist', 'type' => 'business', 'status' => 'active']);
+        $device->forceFill(['current_playlist_id' => $oldPlaylist->id])->save();
+        $media = MediaAsset::factory()->video()->create(['owner_type' => (new Business)->getMorphClass(), 'owner_id' => $device->business_id]);
+        $payload = $this->payload();
+        $payload['assets'] = [['id' => $media->id, 'type' => 'video', 'url' => '/old-private.mp4', 'mime_type' => 'video/mp4']];
+        $payload['business_playlist']['name'] = 'Private old business playlist';
+        $payload['business_playlist']['id'] = $oldPlaylist->id;
+        $payload['business_playlist']['items'] = [['id' => 20, 'media_asset_id' => $media->id, 'order' => 1]];
+        $this->confirm($device, $payload);
+        $this->assertSame('/old-private.mp4', app(DevicePreviewService::class)->forDevice($device)['business_media']['url']);
+        $newBusiness = Business::factory()->create();
+        $device->forceFill(['business_id' => $newBusiness->id])->save();
+        foreach ([false, true] as $deleted) {
+            if ($deleted) {
+                $media->delete();
+            }
+            $preview = app(DevicePreviewService::class)->forDevice($device->fresh());
+            $this->assertSame('unconfirmed', $preview['status']);
+            $this->assertNull($preview['business_media']);
+            $this->assertNull($preview['advertising']);
+            $this->assertNull($preview['playlist']);
+            $this->assertNull($preview['layout']);
+            $this->assertNull($preview['device']['current_playlist']);
+            $this->assertStringNotContainsString('/old-private.mp4', json_encode($preview));
+            $this->assertStringNotContainsString('Private old business playlist', json_encode($preview));
+        }
     }
 }

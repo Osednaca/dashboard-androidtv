@@ -82,12 +82,12 @@ test('installation caches only the public shell; activation removes only obsolet
     await harness.caches.open('another-app-cache');
     await harness.lifecycle('install');
     assert.deepEqual(harness.storedUrls().map((url) => new URL(url).pathname).sort(), [
-        '/brand/alter-logo.jpg', '/icons/alter-192.png', '/icons/alter-512.png',
-        '/icons/alter-maskable-512.png', '/offline.html',
+        '/brand/alter-logo-20261003.png', '/icons/alter-192-20261003.png', '/icons/alter-512-20261003.png',
+        '/icons/alter-maskable-512-20261003.png', '/offline.html',
     ]);
     assert.ok(harness.requests.every((request) => request.credentials === 'omit'));
     await harness.lifecycle('activate');
-    assert.deepEqual([...harness.stores.keys()].sort(), ['alter-public-pwa-v1', 'another-app-cache']);
+    assert.deepEqual([...harness.stores.keys()].sort(), ['alter-public-pwa-v2', 'another-app-cache']);
 });
 
 test('public hashed assets work offline after one cookie-free network fetch', async () => {
@@ -129,10 +129,10 @@ test('API, private media, Inertia, authentication, queries, cross-origin and mut
     const requests = [
         ['/admin/dashboard'], ['/business/dashboard'], ['/api/v1/devices/manifest'],
         ['/storage/private/secret.jpg'], ['/login'], ['/logout'], ['/build/assets/app.js'],
-        ['/build/assets/app-AbCd1234.js?user=1'], ['https://other.test/icons/alter-192.png'],
+        ['/build/assets/app-AbCd1234.js?user=1'], ['https://other.test/icons/alter-192-20261003.png'],
         ['/build/assets/app-AbCd1234.js', { headers: { 'X-Inertia': 'true' } }],
         ['/build/assets/app-AbCd1234.js', { headers: { Authorization: 'Bearer fixture' } }],
-        ['/icons/alter-192.png', { method: 'POST', body: 'private fixture' }],
+        ['/icons/alter-192-20261003.png', { method: 'POST', body: 'private fixture' }],
     ];
     for (const [path, options] of requests) assert.equal(harness.dispatch(path, options).handled, false, path);
     assert.deepEqual(harness.storedUrls(), []);
