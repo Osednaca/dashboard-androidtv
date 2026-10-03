@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Device\CommandController;
 use App\Http\Controllers\Api\Device\HeartbeatController;
 use App\Http\Controllers\Api\Device\ManifestController;
 use App\Http\Controllers\Api\Device\PlaybackEventController;
+use App\Http\Controllers\Api\Device\PlaybackStateController;
 use App\Http\Controllers\Api\Device\QuickPlayController;
 use App\Http\Controllers\Api\Device\SettingsController;
 use App\Http\Controllers\Api\Device\SyncController;
@@ -32,6 +33,7 @@ Route::middleware(['device.token', 'throttle:device-api'])->group(function () {
         ->name('api.device.admin.verify-pin');
     Route::patch('admin/settings', [SettingsController::class, 'update'])->name('api.device.admin.settings');
     Route::post('heartbeat', [HeartbeatController::class, 'store'])->name('api.device.heartbeat');
+    Route::post('playback-state', [PlaybackStateController::class, 'store'])->name('api.device.playback-state');
     Route::get('manifest', [ManifestController::class, 'show'])->name('api.device.manifest');
     Route::get('sync', [SyncController::class, 'show'])->name('api.device.sync');
     Route::post('sync/acknowledge', [SyncController::class, 'acknowledge'])->name('api.device.sync.acknowledge');
