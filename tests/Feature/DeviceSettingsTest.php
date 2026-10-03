@@ -6,6 +6,7 @@ use App\Domain\Campaigns\Models\Campaign;
 use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Enums\DeviceStatus;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Devices\Models\GlobalScreenPin;
 use App\Domain\Media\Models\Layout;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Operations\Models\AuditLog;
@@ -27,7 +28,8 @@ class DeviceSettingsTest extends TestCase
             'configuration' => ['business_area' => 'right', 'advertising_area' => 'left', 'audio_mode' => 'none'],
         ]);
         $device = Device::factory()->online()->create(['current_layout_id' => $layout->id]);
-        $device->forceFill(['admin_pin_hash' => Hash::make('012345')])->save();
+        $pin = new GlobalScreenPin;
+        $pin->forceFill(['id' => 1, 'pin_hash' => Hash::make('012345')])->save();
 
         return $device;
     }
@@ -99,7 +101,8 @@ class DeviceSettingsTest extends TestCase
         foreach ([[], ['business_percentage' => 0], ['business_percentage' => 100], ['orientation' => 'invalid'], ['split' => null], ['audio_mode' => 'both'], ['rotation' => 45], ['rotation' => 360], ['transition' => 'invalid'], ['current_layout_id' => 1]] as $settings) {
             $this->patchJson(self::ENDPOINT, ['pin' => '012345', 'settings' => $settings])->assertUnprocessable();
         }
-        $device->forceFill(['admin_pin_hash' => null])->save();
+        GlobalScreenPin::query()->delete();
+        $this->postJson('/api/v1/device/admin/verify-pin', ['pin' => '012345'])->assertStatus(409);
         $this->assertDatabaseCount('layouts', 1);
         $this->patchJson(self::ENDPOINT, ['settings' => ['orientation' => 'portrait']])->assertOk()
             ->assertJsonPath('manifest.payload.layout.orientation', 'portrait');
@@ -199,7 +202,7 @@ class DeviceSettingsTest extends TestCase
         }
     }
 
-    public function test_legacy_pin_lockout_does_not_block_settings_for_new_players(): void
+    public function test_global_pin_lockout_does_not_block_settings_for_new_players(): void
     {
         $device = $this->device();
         $this->withToken($device->issueToken());

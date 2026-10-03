@@ -1,5 +1,5 @@
 import { DeviceDiagnostics, describeDeviceError, type DeviceDiagnosticsData } from '@/Components/app/DeviceDiagnostics';
-import { Head, router, useForm, usePoll } from '@inertiajs/react';
+import { Head, Link, router, usePoll } from '@inertiajs/react';
 import {
     Clock,
     HardDrive,
@@ -15,8 +15,6 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/Components/app/ConfirmDialog';
-import { FormField } from '@/Components/app/FormField';
-import { Input } from '@/Components/ui/input';
 import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { PageHeader } from '@/Components/app/PageHeader';
@@ -86,7 +84,6 @@ export default function DeviceShow({
 }) {
     const [pendingCommand, setPendingCommand] = useState<CommandType | null>(null);
     const [confirmingRevoke, setConfirmingRevoke] = useState(false);
-    const pinForm = useForm({ pin: '', pin_confirmation: '' });
     usePoll(15000, { only: ['heartbeats', 'failures', 'commands', 'playback'] });
 
     const sendCommand = (type: CommandType) => {
@@ -217,36 +214,15 @@ export default function DeviceShow({
                         </CardContent>
                     </Card>
                     <Card className="xl:col-span-2">
-                        <CardHeader><CardTitle>PIN de acceso a Configuración</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>PIN global de acceso a Configuración</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-sm text-muted">
-                                La app 0.1.12 vuelve a solicitar este PIN para entrar a Configuración. Las versiones 0.1.9 a 0.1.11 no lo solicitan.{' '}
-                                {adminPinConfigured ? 'Esta pantalla ya tiene un PIN. Puedes reemplazarlo aquí.' : 'Configura un PIN para abrir los ajustes de esta pantalla.'}
-                                {' '}Usa seis dígitos. El TV necesita conexión con el servidor para validarlo.
+                                Todas las pantallas de todos los negocios usan el mismo PIN. Los PIN anteriores por pantalla ya no son válidos.{' '}
+                                {adminPinConfigured ? 'El PIN global está configurado.' : 'El administrador debe configurar el PIN global para habilitar el acceso.'}
+                                {' '}El TV necesita conexión con el servidor para validarlo.
                             </p>
                             {canManagePin ? (
-                                <form className="space-y-4" onSubmit={(event) => {
-                                    event.preventDefault();
-                                    pinForm.post(`/admin/devices/${device.id}/admin-pin`, {
-                                        preserveScroll: true,
-                                        onSuccess: () => toast.success('PIN administrativo guardado.'),
-                                        onFinish: () => pinForm.reset(),
-                                    });
-                                }}>
-                                    <div className="grid max-w-xl gap-4 sm:grid-cols-2">
-                                        <FormField label="Nuevo PIN" htmlFor="device-admin-pin" error={pinForm.errors.pin}>
-                                            <Input id="device-admin-pin" type="password" inputMode="numeric" autoComplete="new-password"
-                                                pattern="[0-9]{6}" maxLength={6} required value={pinForm.data.pin}
-                                                onChange={(event) => pinForm.setData('pin', event.target.value)} />
-                                        </FormField>
-                                        <FormField label="Confirmar PIN" htmlFor="device-admin-pin-confirmation" error={pinForm.errors.pin_confirmation}>
-                                            <Input id="device-admin-pin-confirmation" type="password" inputMode="numeric" autoComplete="new-password"
-                                                pattern="[0-9]{6}" maxLength={6} required value={pinForm.data.pin_confirmation}
-                                                onChange={(event) => pinForm.setData('pin_confirmation', event.target.value)} />
-                                        </FormField>
-                                    </div>
-                                    <Button type="submit" disabled={pinForm.processing}><KeyRound className="size-4" />Guardar PIN</Button>
-                                </form>
+                                <Button asChild variant="outline"><Link href="/admin/devices/global-pin"><KeyRound className="size-4" />Administrar PIN global</Link></Button>
                             ) : <p className="text-xs text-faint">Solicita el PIN al administrador de las pantallas.</p>}
                         </CardContent>
                     </Card>

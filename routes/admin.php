@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\BusinessController;
 use App\Http\Controllers\Admin\CampaignController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DeviceController;
+use App\Http\Controllers\Admin\GlobalScreenPinController;
 use App\Http\Controllers\Admin\LiveStreamController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\MediaController;
@@ -43,12 +44,13 @@ Route::put('locations/{location}', [LocationController::class, 'update'])->middl
 Route::delete('locations/{location}', [LocationController::class, 'destroy'])->middleware('permission:locations.manage')->name('locations.destroy');
 
 // Devices / screens
+Route::get('devices/global-pin', [GlobalScreenPinController::class, 'show'])->middleware('permission:devices.manage')->name('devices.global-pin');
+Route::put('devices/global-pin', [GlobalScreenPinController::class, 'update'])->middleware('permission:devices.manage')->name('devices.global-pin.update');
 Route::get('devices/activations', [DeviceController::class, 'activations'])->middleware('permission:devices.view')->name('devices.activations');
 Route::post('activations/{activation}/assign', [DeviceController::class, 'assignActivation'])->middleware('permission:devices.manage')->name('activations.assign');
 Route::post('activations/{activation}/revoke', [DeviceController::class, 'revokeActivation'])->middleware('permission:devices.manage')->name('activations.revoke');
 Route::get('devices', [DeviceController::class, 'index'])->middleware('permission:devices.view')->name('devices.index');
 Route::get('devices/{device}', [DeviceController::class, 'show'])->middleware('permission:devices.view')->name('devices.show');
-Route::post('devices/{device}/admin-pin', [DeviceController::class, 'setAdminPin'])->middleware('permission:devices.manage')->name('devices.admin-pin');
 Route::post('devices/{device}/commands', [DeviceController::class, 'command'])->middleware('permission:devices.commands')->name('devices.commands');
 Route::post('devices/{device}/sync', [DeviceController::class, 'sync'])->middleware('permission:devices.manage')->name('devices.sync');
 Route::post('devices/{device}/toggle-status', [DeviceController::class, 'toggleStatus'])->middleware('permission:devices.manage')->name('devices.toggle-status');
