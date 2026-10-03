@@ -93,9 +93,13 @@ Las fechas de vencimiento de los comandos y del contenido de Instant Play tambi�
 
 ## PIN administrativo de Android TV
 
-El APK 0.1.4 permite abrir la configuración usando un PIN de seis dígitos por pantalla. Después de desplegar ejecuta `php artisan migrate --force` para añadir `devices.admin_pin_hash`. En **Dispositivos → pantalla → Resumen → PIN administrativo del TV**, un usuario con permiso `devices.manage` puede establecer o reemplazar el PIN. No existe un PIN predeterminado ni se muestra el valor guardado.
+Todas las pantallas de todos los negocios usan un único PIN de seis dígitos. Tras desplegar y ejecutar `php artisan migrate --force`, un usuario del personal con permiso `devices.manage` debe configurarlo en **Pantallas → PIN global**. Los PIN anteriores por pantalla dejan de funcionar; sin configurar el nuevo PIN global, la verificación devuelve 409. No hay PIN predeterminado ni se muestra el valor guardado.
 
-La validación se realiza en `POST /api/v1/device/admin/verify-pin` con el token de la pantalla. El PIN se guarda como hash, se excluye de respuestas del modelo, auditorías y datos de sesión de formularios fallidos. Se rechazan PIN vacíos, incorrectos, tokens inválidos y pantallas deshabilitadas. Cinco intentos incorrectos bloquean a esa pantalla durante cinco minutos; una validación correcta limpia los fallos anteriores. El TV requiere conexión al servidor y el APK 0.1.4. No es necesario desvincularlo para actualizar.
+Se conserva `POST /api/v1/device/admin/verify-pin` con el token de la pantalla para los APK que verifican el PIN en línea. El hash está oculto y se limitan los intentos por dispositivo, IP y red completa. No se requiere volver a vincular las pantallas. [Configuración, límites y reversión](docs/global-screen-pin.md).
+
+## Dashboard web y PWA
+
+El cambio de cuenta respeta los permisos del nuevo usuario, el login permite mostrar/ocultar la contraseña, y el preview representa el contenido confirmado con orientación y división. El preview sigue siendo aproximado hasta implementar los próximos cambios Android. El dashboard ofrece instalación como PWA y un aviso público sin datos privados al perder conexión. [Entrega, comprobaciones y pasos en EasyPanel](docs/dashboard-web-validation.md).
 
 ## Ajustes de pantalla desde el TV (APK 0.1.6)
 
@@ -103,7 +107,7 @@ El APK 0.1.7 añade `settings.rotation` (0, 90, 180, 270) y `settings.transition
 
 Para habilitarlo, desplegar el backend actualizado e instalar el APK 0.1.7; este cambio no incorpora migraciones ni cambios del frontend. Los originales de las imágenes del negocio permanecen en el panel, y el TV guarda una copia persistente para reproducir sin Internet después de sincronizar. Los archivos publicitarios mantienen su almacenamiento en la nube.
 
-La app puede guardar división, proporción, orientación y audio mediante `PATCH /api/v1/device/admin/settings`, con bearer de la pantalla, `pin` y un objeto `settings` que contiene los campos modificados (`split`, `business_percentage`, `orientation`, `audio_mode`). Revalida el PIN al guardar y comparte el límite de intentos con la entrada al menú. No permite elegir otra pantalla ni modificar un diseño compartido: crea una configuración nueva cuando cambia el diseño y la asigna únicamente al dispositivo autenticado. El dashboard refleja su layout asignado; los siguientes manifiestos conservan los cambios.
+La app puede guardar división, proporción, orientación y audio mediante `PATCH /api/v1/device/admin/settings`, con bearer de la pantalla y un objeto `settings` que contiene los campos modificados (`split`, `business_percentage`, `orientation`, `audio_mode`). El contrato actual admite guardar sin enviar PIN; la verificación del PIN para entrar al menú usa el endpoint separado `admin/verify-pin`. No permite elegir otra pantalla ni modificar un diseño compartido: crea una configuración nueva cuando cambia el diseño y la asigna únicamente al dispositivo autenticado. El dashboard refleja su layout asignado; los siguientes manifiestos conservan los cambios.
 
 Devuelve un manifiesto completo para que Android lo instale de inmediato, sin inventar versiones locales. Las versiones se generan bajo bloqueo del dispositivo y crecen aunque se guarden varios cambios en un segundo. La auditoría identifica la pantalla y campos modificados, sin PIN ni token. Los errores de descarga posteriores al guardado dejan el manifiesto pendiente de sincronización, conservando el contenido local anterior.
 
