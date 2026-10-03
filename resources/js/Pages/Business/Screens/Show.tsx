@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePoll } from '@inertiajs/react';
 import { ArrowLeft, HardDrive, LayoutTemplate, ListVideo, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { BusinessScreenPreview, type BusinessPreviewData } from '@/Components/app/BusinessScreenPreview';
 import { PageHeader } from '@/Components/app/PageHeader';
@@ -18,6 +18,7 @@ export default function ScreenShow({
     device: DeviceEntity;
     preview: BusinessPreviewData | null;
 }) {
+    usePoll(15000, { only: ['preview', 'device'] });
     const { can } = usePermissions();
 
     return (

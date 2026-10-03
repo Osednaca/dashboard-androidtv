@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePoll } from '@inertiajs/react';
 import { MonitorPlay, Sparkles } from 'lucide-react';
 import { BusinessScreenPreview, type BusinessPreviewData } from '@/Components/app/BusinessScreenPreview';
 import { EmptyState } from '@/Components/app/EmptyState';
@@ -18,6 +18,7 @@ export default function PreviewIndex({
     preview: BusinessPreviewData | null;
     selectedDeviceId: number | null;
 }) {
+    usePoll(15000, { only: ['preview'] });
     const select = (id: number) => {
         router.get('/business/preview', { device: id }, { preserveState: true, preserveScroll: true, only: ['preview', 'selectedDeviceId'] });
     };
@@ -28,8 +29,8 @@ export default function PreviewIndex({
 
             <PageHeader
                 eyebrow="Pantallas"
-                title="Vista previa en vivo"
-                description="Así se ve tu contenido en cada pantalla, con el layout configurado por la plataforma."
+                title="Vista previa de pantallas"
+                description="Contenido y diseño confirmados por la TV. La reproducción sincronizada estará disponible con la actualización de Android."
             />
 
             <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-12">

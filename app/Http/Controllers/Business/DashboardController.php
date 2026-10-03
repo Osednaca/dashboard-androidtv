@@ -45,7 +45,7 @@ class DashboardController extends Controller
             ? $devices->firstWhere('id', $request->integer('device'))
             : null;
 
-        $selected ??= $devices->first(fn ($device) => $device->isOnline()) ?? $devices->first();
+        $selected ??= $devices->first();
 
         return Inertia::render('Business/Home', [
             'business' => EntityPresenter::businessSelf($business),
@@ -69,7 +69,7 @@ class DashboardController extends Controller
             'schedules' => $schedules->map(fn ($schedule) => EntityPresenter::contentSchedule($schedule))->values()->all(),
             'recentMedia' => $recentMedia->map(fn ($media) => EntityPresenter::mediaAsset($media))->values()->all(),
             'devices' => $devices->map(fn ($device) => EntityPresenter::device($device))->values()->all(),
-            'preview' => $selected ? $this->preview->forDevice($selected) : null,
+            'preview' => fn () => $selected ? $this->preview->forDevice($selected) : null,
             'selectedDeviceId' => $selected?->id,
             'audioVolume' => (int) data_get($business->metadata, 'audio_volume', 70),
         ]);

@@ -13,6 +13,47 @@ class UserBusinessAssignmentTest extends TestCase
 {
     use CreatesUsers, RefreshDatabase;
 
+    public function test_a_new_business_contact_email_can_be_used_by_its_new_login_account(): void
+    {
+        $admin = $this->superAdmin();
+        $email = 'contacto@negocio.example';
+
+        $this->actingAs($admin)->post('/admin/businesses', [
+            'name' => 'Negocio con correo compartido',
+            'category' => 'cafe',
+            'status' => 'active',
+            'timezone' => 'America/Bogota',
+            'contact_email' => $email,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $business = Business::query()->where('contact_email', $email)->sole();
+        $this->assertDatabaseMissing('users', ['email' => $email]);
+
+        $account = [
+            'name' => 'Contacto del negocio',
+            'email' => $email,
+            'status' => 'active',
+            'password' => 'StrongPass123',
+            'password_confirmation' => 'StrongPass123',
+            'roles' => [RoleEnum::BusinessUser->value],
+            'business_id' => $business->id,
+        ];
+
+        $this->post('/admin/users', $account)->assertSessionHasNoErrors()->assertRedirect();
+        $user = User::query()->where('email', $email)->sole();
+        $this->assertDatabaseHas('business_users', ['user_id' => $user->id, 'business_id' => $business->id]);
+
+        $this->put("/admin/users/{$user->id}", $account)->assertSessionHasNoErrors()->assertRedirect();
+        $this->post('/admin/users', [...$account, 'name' => 'Cuenta duplicada'])->assertSessionHasErrors('email');
+        $this->assertSame(1, User::query()->where('email', $email)->count());
+
+        $this->post('/logout');
+        $this->post('/login', ['email' => $email, 'password' => 'StrongPass123'])
+            ->assertSessionHasNoErrors()->assertRedirect(route('business.dashboard'));
+        $this->assertAuthenticatedAs($user);
+        $this->get('/business/dashboard')->assertOk();
+    }
+
     public function test_admin_can_create_a_business_user_assigned_to_a_business(): void
     {
         $admin = $this->superAdmin();

@@ -8,8 +8,8 @@ use App\Domain\Analytics\Models\DeviceDailyStat;
 use App\Domain\Businesses\Models\Business;
 use App\Domain\Campaigns\Enums\CampaignStatus;
 use App\Domain\Campaigns\Models\Campaign;
-use App\Domain\Devices\Enums\DeviceStatus;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Devices\Services\DevicePreviewService;
 use App\Domain\Locations\Models\Location;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Operations\Models\Alert;
@@ -78,7 +78,6 @@ class DashboardService
             'cities' => Cache::remember("dashboard.cities.{$to->toDateString()}", $ttl, fn () => $this->cities()),
             'cityCoverage' => CityDailyStat::query()->whereBetween('stat_date', [$from, $to])->distinct()->count('city'),
             'campaignPerformance' => $this->campaignPerformance($from, $to),
-            'screenPreview' => $this->screenPreview(),
             'recentActivity' => $this->recentActivity(),
         ];
     }
@@ -224,37 +223,15 @@ class DashboardService
     /**
      * @return array<string, mixed>|null
      */
-    protected function screenPreview(): ?array
+    public function screenPreview(?int $deviceId = null): ?array
     {
         $device = Device::query()
-            ->where('status', DeviceStatus::Online->value)
-            ->with(['business', 'location', 'currentLayout', 'currentPlaylist.items.mediaAsset'])
-            ->inRandomOrder()
+            ->when($deviceId !== null, fn ($query) => $query->whereKey($deviceId))
+            ->with(['business', 'location', 'currentLayout', 'currentPlaylist'])
+            ->orderBy('id')
             ->first();
 
-        if (! $device) {
-            return null;
-        }
-
-        $campaign = Campaign::query()
-            ->where('status', CampaignStatus::Active->value)
-            ->with(['advertiser', 'creatives.mediaAsset'])
-            ->inRandomOrder()
-            ->first();
-
-        $businessItem = $device->currentPlaylist?->items->firstWhere(fn ($item) => $item->mediaAsset !== null);
-        $campaignCreative = $campaign?->creatives->firstWhere('mediaAsset', '!=', null);
-
-        return [
-            'device' => EntityPresenter::device($device),
-            'business_media' => $businessItem?->mediaAsset
-                ? EntityPresenter::mediaAsset($businessItem->mediaAsset)
-                : null,
-            'advertising' => $campaign && $campaignCreative?->mediaAsset ? [
-                'campaign' => EntityPresenter::campaign($campaign),
-                'media' => EntityPresenter::mediaAsset($campaignCreative->mediaAsset),
-            ] : null,
-        ];
+        return $device ? app(DevicePreviewService::class)->forDevice($device) : null;
     }
 
     /**

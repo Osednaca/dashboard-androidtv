@@ -3,6 +3,7 @@ import { Loader2, Lock, Mail } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
+import { PasswordInput } from '@/Components/ui/password-input';
 import { Label } from '@/Components/ui/label';
 import { BrandLogo } from '@/Components/app/BrandLogo';
 import type { PageProps } from '@/Types';
@@ -102,10 +103,10 @@ export default function Login({ status }: { status?: string }) {
                         <div className="space-y-1.5">
                             <Label htmlFor="password">Contraseña</Label>
                             <div className="relative">
-                                <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
-                                <Input
+                                <Lock className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-faint" />
+                                <PasswordInput
                                     id="password"
-                                    type="password"
+                                    autoComplete="current-password"
                                     value={data.password}
                                     onChange={(event) => setData('password', event.target.value)}
                                     className="pl-9"

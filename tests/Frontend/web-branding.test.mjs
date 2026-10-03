@@ -65,6 +65,42 @@ test('login has Alter identity in both desktop and small-screen containers', () 
     assert.match(html, /mb-6 flex[^\"]*lg:hidden/);
     assert.equal((html.match(/>Alter</g) ?? []).length, 2);
     assert.doesNotMatch(html, /Signage TV/);
+    assert.match(html, /<input(?=[^>]*id="password")(?=[^>]*type="password")[^>]*>/);
+    assert.match(html, /autoComplete="current-password"/);
+    assert.match(html, /type="button"[^>]*aria-label="Mostrar contraseña"[^>]*aria-pressed="false"[^>]*aria-controls="password"/);
+    assert.doesNotMatch(html, /tabindex="-1"/i);
+});
+
+test('password visibility keeps the password masked even if a caller supplies type text', () => {
+    const { PasswordInput } = load(resolve(root, 'Components/ui/password-input.tsx'));
+    const html = renderToStaticMarkup(React.createElement(PasswordInput, {
+        id: 'new-password', type: 'text', value: 'secret', readOnly: true, disabled: true,
+    }));
+    assert.match(html, /<input(?=[^>]*id="new-password")(?=[^>]*type="password")[^>]*>/);
+    assert.match(html, /value="secret"/);
+    assert.match(html, /aria-controls="new-password"[^>]*disabled=""/);
+});
+
+test('forbidden-page recovery returns each account to its permitted dashboard', () => {
+    const { default: ErrorPage } = load(resolve(root, 'Pages/Errors/Error.tsx'));
+    for (const [permissions, destination] of [
+        [['business.dashboard.view'], '/business/dashboard'],
+        [['devices.view'], '/admin/dashboard'],
+        [['business.dashboard.view', 'devices.view'], '/admin/dashboard'],
+    ]) {
+        page.props.auth.user = { permissions };
+        try {
+            const html = renderToStaticMarkup(React.createElement(ErrorPage, { status: 403 }));
+            assert.match(html, /Acceso denegado/);
+            assert.ok(html.includes(`href="${destination}"`));
+            assert.match(html, /Volver al dashboard/);
+        } finally {
+            page.props.auth.user = null;
+        }
+    }
+    const guestHtml = renderToStaticMarkup(React.createElement(ErrorPage, { status: 419 }));
+    assert.match(guestHtml, /Sesión expirada/);
+    assert.match(guestHtml, /href="\/login"[^>]*>Iniciar sesión/);
 });
 
 test('sidebar retains an accessible Alter link while collapsed and expanded', () => {

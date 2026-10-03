@@ -3,6 +3,9 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
 import type { PageProps } from '@/Types';
+import { registerDashboardPwa } from '@/pwa';
+
+registerDashboardPwa();
 
 let appName = 'Alter';
 

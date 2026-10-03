@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
 import {
     Activity,
     ArrowRight,
@@ -57,7 +57,6 @@ interface Overview {
     cities: Array<{ city: string; screens: number; online: number }>;
     cityCoverage: number;
     campaignPerformance: CampaignEntity[];
-    screenPreview: ScreenPreviewData | null;
     recentActivity: { logs: AuditEntity[]; alerts: AlertEntity[] };
 }
 
@@ -68,7 +67,12 @@ const healthColors: Record<string, string> = {
     disabled: '#5f7488',
 };
 
-export default function Dashboard({ overview }: { overview: Overview }) {
+export default function Dashboard({ overview, screenPreview, previewDevices }: {
+    overview: Overview;
+    screenPreview: ScreenPreviewData | null;
+    previewDevices: Array<{ id: number; name: string }>;
+}) {
+    usePoll(15000, { only: ['screenPreview'] });
     const { auth } = usePage<PageProps>().props;
     const { can } = usePermissions();
     const firstName = (auth.user?.name ?? '').split(' ')[0];
@@ -100,6 +104,7 @@ export default function Dashboard({ overview }: { overview: Overview }) {
                             from={overview.range.from}
                             to={overview.range.to}
                             routeName="dashboard"
+                            extra={{ device: screenPreview?.device.id }}
                         />
                         {can('campaigns.create') ? (
                             <Button variant="primary" size="sm" asChild>
@@ -331,15 +336,23 @@ export default function Dashboard({ overview }: { overview: Overview }) {
                 <Card className="xl:col-span-5">
                     <CardHeader>
                         <div>
-                            <CardTitle>Vista en tiempo real</CardTitle>
-                            <p className="mt-0.5 text-xs text-muted">Simulación de pantalla conectada</p>
+                            <CardTitle>Vista previa de pantalla</CardTitle>
+                            <p className="mt-0.5 text-xs text-muted">Muestra del contenido y diseño confirmados por la TV</p>
                         </div>
-                        <span className="inline-flex items-center gap-1.5 text-xs text-positive">
-                            <span className="size-1.5 animate-pulse rounded-full bg-positive" /> En reproducción
-                        </span>
+                        <span className="text-xs text-muted">Vista aproximada</span>
                     </CardHeader>
                     <CardContent>
-                        <ScreenPreview preview={overview.screenPreview} />
+                        <label className="mb-3 block text-xs text-muted">
+                            Pantalla
+                            <select className="mt-1 w-full rounded-control border border-line bg-surface p-2 text-fg"
+                                value={screenPreview?.device.id ?? ''}
+                                onChange={event => router.get('/admin/dashboard', {
+                                    from: overview.range.from, to: overview.range.to, device: event.target.value,
+                                }, { only: ['screenPreview'], preserveState: true, preserveScroll: true })}>
+                                {previewDevices.map(device => <option key={device.id} value={device.id}>{device.name}</option>)}
+                            </select>
+                        </label>
+                        <ScreenPreview preview={screenPreview} />
                     </CardContent>
                 </Card>
             </div>

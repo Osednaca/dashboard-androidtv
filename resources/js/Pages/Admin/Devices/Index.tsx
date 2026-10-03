@@ -11,6 +11,7 @@ import { Button } from '@/Components/ui/button';
 import { Progress } from '@/Components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { AdminLayout } from '@/Layouts/AdminLayout';
+import { usePermissions } from '@/Hooks/usePermissions';
 import type { DeviceEntity, Option, Paginated } from '@/Types';
 import { formatBytes, formatRelative } from '@/Utils/format';
 
@@ -28,6 +29,7 @@ export default function DevicesIndex({
     filters: { search?: string; status?: string; business_id?: string; city?: string; app_version?: string };
     options: { statuses: Option[]; businesses: BusinessOption[]; cities: string[]; appVersions: string[] };
 }) {
+    const { can } = usePermissions();
     const applyFilter = (patch: Record<string, string>) => {
         const next: Record<string, string> = { ...filters, ...patch };
         Object.keys(next).forEach((key) => {
@@ -140,12 +142,19 @@ export default function DevicesIndex({
                 title="Pantallas"
                 description="Dispositivos Android TV instalados en la red."
                 actions={
-                    <Button variant="secondary" size="sm" asChild>
-                        <Link href="/admin/devices/activations">
-                            <KeyRound className="size-4" />
-                            Activaciones
-                        </Link>
-                    </Button>
+                    <>
+                        {can('devices.manage') ? (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href="/admin/devices/global-pin"><KeyRound className="size-4" />PIN global</Link>
+                            </Button>
+                        ) : null}
+                        <Button variant="secondary" size="sm" asChild>
+                            <Link href="/admin/devices/activations">
+                                <KeyRound className="size-4" />
+                                Activaciones
+                            </Link>
+                        </Button>
+                    </>
                 }
             />
 

@@ -8,7 +8,7 @@ class DeviceAdminPinRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('device'));
+        return $this->user()->hasPermission('devices.manage');
     }
 
     public function rules(): array

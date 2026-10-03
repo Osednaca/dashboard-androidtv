@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from '@/Components/ui/button';
+import type { PageProps } from '@/Types';
 
 const messages: Record<number, { title: string; description: string }> = {
     403: { title: 'Acceso denegado', description: 'No tienes permisos para ver esta sección.' },
@@ -12,6 +13,12 @@ const messages: Record<number, { title: string; description: string }> = {
 
 export default function Error({ status }: { status: number }) {
     const message = messages[status] ?? messages[500];
+    const user = usePage<PageProps>().props.auth.user;
+    const home = user
+        ? user.permissions.includes('business.dashboard.view') && !user.permissions.includes('devices.view')
+            ? '/business/dashboard'
+            : '/admin/dashboard'
+        : '/login';
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas px-6 text-center">
@@ -22,7 +29,7 @@ export default function Error({ status }: { status: number }) {
                 <p className="mt-1 text-sm text-muted">{message.description}</p>
             </div>
             <Button variant="primary" asChild>
-                <Link href="/admin/dashboard">Volver al dashboard</Link>
+                <Link href={home}>{user ? 'Volver al dashboard' : 'Iniciar sesión'}</Link>
             </Button>
         </div>
     );
