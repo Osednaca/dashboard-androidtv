@@ -102,7 +102,8 @@ class DevicePreviewService
     private function snapshotBelongsToCurrentBusiness(Device $device, array $payload): bool
     {
         $previous = DevicePlaybackState::query()->where('device_id', $device->id)->first();
-        if ($previous && $previous->business_id !== $device->business_id) {
+        $businessId = $device->business_id === null ? null : (int) $device->business_id;
+        if ($previous && $previous->business_id !== $businessId) {
             return false;
         }
         $ids = collect($payload['assets'] ?? [])->pluck('id');

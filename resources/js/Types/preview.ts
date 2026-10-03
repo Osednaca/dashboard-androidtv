@@ -60,7 +60,7 @@ export interface PlaybackReport {
     sequence: number;
     scene: 'playback' | 'settings' | 'pin' | 'background' | 'activation';
     layout: {
-        manifest_version: string | null;
+        manifest_version?: string | null;
         rotation: number;
         split: 'top_bottom' | 'side_by_side';
         business_percentage: number;

@@ -337,9 +337,16 @@ export default function Dashboard({ overview, screenPreview, previewDevices }: {
                     <CardHeader>
                         <div>
                             <CardTitle>Vista previa de pantalla</CardTitle>
-                            <p className="mt-0.5 text-xs text-muted">Muestra del contenido y diseño confirmados por la TV</p>
+                            <p className="mt-0.5 text-xs text-muted">
+                                {screenPreview?.playback ? 'Último estado recibido de la TV'
+                                    : screenPreview ? 'Muestra del contenido y diseño confirmados por la TV'
+                                    : 'Selecciona una pantalla para consultar su estado'}
+                            </p>
                         </div>
-                        <span className="text-xs text-muted">Vista aproximada</span>
+                        <span className="text-xs text-muted">
+                            {screenPreview?.playback ? 'Reporte de la TV'
+                                : screenPreview ? 'Vista aproximada' : 'Sin pantalla'}
+                        </span>
                     </CardHeader>
                     <CardContent>
                         <label className="mb-3 block text-xs text-muted">

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Businesses\Models\Business;
 use App\Domain\Devices\Enums\ManifestStatus;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Devices\Models\DevicePlaybackState;
 use App\Domain\Devices\Services\DevicePlaybackStateService;
 use App\Domain\Devices\Services\DevicePreviewService;
 use App\Domain\Media\Models\MediaAsset;
@@ -271,6 +272,33 @@ class DevicePreviewTest extends TestCase
             ->where('preview.status', 'stale')->where('preview.business_media', null)->has('preview.playback.zones', 0));
         $this->assertSame($before, $device->fresh()->getAttributes());
         $this->assertDatabaseCount('device_playback_states', 1);
+    }
+
+    public function test_legacy_fallback_accepts_numeric_string_business_identity_but_rejects_a_different_business(): void
+    {
+        $device = Device::factory()->create();
+        $this->confirm($device, $this->payload());
+        DevicePlaybackState::query()->create([
+            'device_id' => $device->id, 'business_id' => $device->business_id,
+            'session_id' => '97b13501-cd75-44bc-b11b-55b8a0effc98', 'sequence' => 1,
+            'payload' => [], 'received_at' => now(),
+        ]);
+        $this->mock(DevicePlaybackStateService::class)->shouldReceive('preview')->twice()->andReturnNull();
+        $device->setAttribute('business_id', (string) $device->business_id);
+
+        $preview = app(DevicePreviewService::class)->forDevice($device);
+
+        $this->assertSame('approximate', $preview['status']);
+        $this->assertSame('/confirmed.mp4', $preview['business_media']['url']);
+        $this->assertSame('Lista confirmada', $preview['playlist']['name']);
+
+        $device->setAttribute('business_id', (string) Business::factory()->create()->id);
+        $preview = app(DevicePreviewService::class)->forDevice($device);
+
+        $this->assertSame('unconfirmed', $preview['status']);
+        $this->assertNull($preview['business_media']);
+        $this->assertNull($preview['playlist']);
+        $this->assertNull($preview['manifest_version']);
     }
 
     public function test_reassignment_or_deleted_sources_cannot_leak_prior_business_urls_or_playlist_names(): void

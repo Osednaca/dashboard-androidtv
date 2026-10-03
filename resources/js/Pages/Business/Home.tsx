@@ -126,7 +126,11 @@ export default function BusinessHome({
                     <CardHeader>
                         <div>
                             <CardTitle>Vista previa de la pantalla</CardTitle>
-                            <p className="mt-0.5 text-xs text-muted">Muestra del contenido y diseño confirmados por la TV</p>
+                            <p className="mt-0.5 text-xs text-muted">
+                                {preview?.playback ? 'Último estado recibido de la TV'
+                                    : preview ? 'Muestra del contenido y diseño confirmados por la TV'
+                                    : 'Selecciona una pantalla para consultar su estado'}
+                            </p>
                         </div>
                         {preview?.device.is_online ? (
                             <span className="inline-flex items-center gap-1.5 text-xs text-positive">
