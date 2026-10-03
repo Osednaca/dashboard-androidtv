@@ -209,6 +209,10 @@ class DevicePlaybackStateTest extends TestCase
             'command_id' => $delivery->command_id, 'media_asset_id' => $media->id, 'state' => 'playing', 'position_ms' => 1200]];
         $this->send($device, $report)->assertOk();
         $this->assertSame($media->url, app(DevicePlaybackStateService::class)->preview($device->fresh())['zones']['fullscreen']['media']['url']);
+        $numericString = $report;
+        $numericString['sequence']++;
+        $numericString['zones']['fullscreen']['command_id'] = (string) $delivery->command_id;
+        $this->send($device, $numericString)->assertOk()->assertJsonPath('accepted', true);
         foreach (['command_id', 'media_asset_id', 'quick_play_device_id'] as $key) {
             $bad = $report;
             $bad['zones']['fullscreen'][$key] += 999;

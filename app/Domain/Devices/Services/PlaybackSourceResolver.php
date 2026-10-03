@@ -149,8 +149,8 @@ class PlaybackSourceResolver
             || ! $play->expires_at || $play->expires_at->isPast()
             || ($play->business_id !== null && (int) $play->business_id !== (int) $device->business_id)
             || $delivery->display_mode->value !== $name
-            || ! $command || $command->device_id !== $device->id || $command->command !== DeviceCommandType::QuickPlay
-            || $command->id !== ($zone['command_id'] ?? null)
+            || ! $command || (int) $command->device_id !== (int) $device->id || $command->command !== DeviceCommandType::QuickPlay
+            || (int) $command->id !== (int) ($zone['command_id'] ?? 0)
             || ($command->expires_at !== null && $command->expires_at->isPast())
             || ! in_array($command->status->value, ['pending', 'sent'], true)
             || ! $asset || (int) $asset['id'] !== (int) $zone['media_asset_id']
