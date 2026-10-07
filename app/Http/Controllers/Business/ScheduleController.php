@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Business;
 
 use App\Domain\Playlists\Models\Playlist;
 use App\Domain\Playlists\Models\PlaylistItem;
-use App\Domain\Scheduling\Jobs\RefreshBusinessManifests;
+use App\Domain\Scheduling\Actions\InvalidateBusinessDevices;
 use App\Domain\Scheduling\Models\ContentSchedule;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
@@ -82,7 +82,7 @@ class ScheduleController extends Controller
 
         DB::transaction(function () use ($data) {
             $this->business()->schedules()->create($this->withIndependentContent($data));
-            RefreshBusinessManifests::dispatch($this->businessId())->afterCommit();
+            app(InvalidateBusinessDevices::class)->handle($this->businessId());
         });
 
         return back()->with(
@@ -104,7 +104,7 @@ class ScheduleController extends Controller
             $locked = $this->business()->schedules()->lockForUpdate()->findOrFail($schedule->id);
             $locked->update($this->withIndependentContent($data, $locked));
             // Refresh both the previous and new locations, including moves to/from all locations.
-            RefreshBusinessManifests::dispatch($this->businessId())->afterCommit();
+            app(InvalidateBusinessDevices::class)->handle($this->businessId());
         });
 
         return back()->with(
@@ -119,10 +119,11 @@ class ScheduleController extends Controller
     {
         $this->authorizeOwned($schedule);
 
-        $schedule->delete();
-
-        // Keep playlist/media history; managed playlists never become fallback content.
-        RefreshBusinessManifests::dispatch($this->businessId());
+        DB::transaction(function () use ($schedule) {
+            // Keep playlist/media history; managed playlists never become fallback content.
+            $schedule->delete();
+            app(InvalidateBusinessDevices::class)->handle($this->businessId());
+        });
 
         return back()->with('success', 'Programación eliminada.');
     }

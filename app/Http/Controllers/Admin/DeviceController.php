@@ -166,7 +166,13 @@ class DeviceController extends Controller
             : DeviceStatus::Disabled;
 
         $old = $device->status;
-        $device->forceFill(['status' => $newStatus])->save();
+        $changes = ['status' => $newStatus];
+        if ($newStatus === DeviceStatus::Offline) {
+            // Campaign targeting excludes disabled screens. Rebuild on the next
+            // automatic poll to include all edits made while this screen was off.
+            $changes['manifest_dirty'] = true;
+        }
+        $device->forceFill($changes)->save();
 
         app(RecordAudit::class)->handle('device.status.changed', $device, ['status' => $old->value], ['status' => $newStatus->value]);
 
