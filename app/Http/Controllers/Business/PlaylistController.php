@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Business;
 use App\Domain\Playlists\Enums\PlaylistStatus;
 use App\Domain\Playlists\Enums\PlaylistType;
 use App\Domain\Playlists\Models\Playlist;
-use App\Domain\Scheduling\Jobs\RefreshBusinessManifests;
+use App\Domain\Scheduling\Actions\InvalidateBusinessDevices;
 use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Business\PlaylistRequest;
@@ -51,12 +51,13 @@ class PlaylistController extends Controller
         $this->authorizeOwned($playlist);
         abort_unless(! $playlist->is_schedule_managed && $playlist->type === PlaylistType::Business, 404);
 
-        $playlist->update([
-            'name' => $request->string('name')->toString(),
-            'status' => $request->filled('status') ? $request->string('status')->toString() : $playlist->status,
-        ]);
-
-        RefreshBusinessManifests::dispatch($this->businessId());
+        DB::transaction(function () use ($request, $playlist) {
+            $playlist->update([
+                'name' => $request->string('name')->toString(),
+                'status' => $request->filled('status') ? $request->string('status')->toString() : $playlist->status,
+            ]);
+            app(InvalidateBusinessDevices::class)->handle($this->businessId());
+        });
 
         return back()->with('success', 'Lista actualizada.');
     }
@@ -96,11 +97,12 @@ class PlaylistController extends Controller
         $this->authorizeOwned($playlist);
         abort_unless(! $playlist->is_schedule_managed && $playlist->type === PlaylistType::Business, 404);
 
-        $playlist->items()->delete();
-        $playlist->schedules()->delete();
-        $playlist->delete();
-
-        RefreshBusinessManifests::dispatch($this->businessId());
+        DB::transaction(function () use ($playlist) {
+            $playlist->items()->delete();
+            $playlist->schedules()->delete();
+            $playlist->delete();
+            app(InvalidateBusinessDevices::class)->handle($this->businessId());
+        });
 
         return redirect()
             ->route('business.playlists.index')
