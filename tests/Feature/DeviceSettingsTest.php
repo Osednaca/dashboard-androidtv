@@ -20,6 +20,21 @@ class DeviceSettingsTest extends TestCase
 
     private const ENDPOINT = '/api/v1/device/admin/settings';
 
+    public function test_missing_audio_defaults_to_advertising_and_explicit_modes_are_preserved(): void
+    {
+        foreach ([null, 'none', 'business', 'advertising'] as $mode) {
+            $configuration = $mode === null ? [] : ['audio_mode' => $mode];
+            $layout = Layout::query()->create([
+                'name' => 'Audio', 'orientation' => 'landscape', 'business_percentage' => 70,
+                'advertising_percentage' => 30, 'configuration' => $configuration,
+            ]);
+            $device = Device::factory()->create(['current_layout_id' => $layout->id]);
+            $manifest = app(BuildDeviceManifest::class)->handle($device);
+            $this->assertSame($mode ?? 'advertising', $manifest->payload['layout']['configuration']['audio_mode']);
+            $this->assertSame($configuration, $layout->fresh()->configuration);
+        }
+    }
+
     private function device(): Device
     {
         $layout = Layout::query()->create([

@@ -30,6 +30,7 @@ class SystemDefaultsSeeder extends Seeder
         return collect($definitions)->map(fn (array $attributes) => Layout::query()->firstOrCreate(
             ['name' => $attributes['name']],
             [...$attributes, 'configuration' => [
+                'audio_mode' => 'advertising',
                 'business_area' => 'left',
                 'advertising_area' => 'right',
                 'ticker' => $attributes['advertising_percentage'] <= 20,

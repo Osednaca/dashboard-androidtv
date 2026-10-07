@@ -114,7 +114,7 @@ class BuildDeviceManifest
                 'orientation' => $layout->orientation?->value,
                 'business_percentage' => $layout->business_percentage,
                 'advertising_percentage' => $layout->advertising_percentage,
-                'configuration' => $layout->configuration,
+                'configuration' => array_replace(['audio_mode' => 'advertising'], $layout->configuration ?? []),
             ] : null,
             // The playlist that should be playing right now (server decision).
             'business_playlist' => $activePlaylist ? $this->playlistPayload($activePlaylist) : null,

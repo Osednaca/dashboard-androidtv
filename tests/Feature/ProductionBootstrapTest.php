@@ -26,7 +26,8 @@ class ProductionBootstrapTest extends TestCase
 
         $this->artisan('db:seed', ['--force' => true])->assertSuccessful();
         $layout = Layout::query()->where('is_default', true)->firstOrFail();
-        $layout->update(['business_percentage' => 65, 'advertising_percentage' => 35]);
+        $this->assertSame('advertising', $layout->configuration['audio_mode']);
+        $layout->update(['business_percentage' => 65, 'advertising_percentage' => 35, 'configuration' => ['audio_mode' => 'none']]);
         SystemSetting::query()->where('key', 'network.name')->update(['value' => json_encode(['data' => 'Mi red'])]);
         $this->artisan('db:seed', ['--force' => true])->assertSuccessful();
 
@@ -34,6 +35,7 @@ class ProductionBootstrapTest extends TestCase
         $this->assertSame($hash, $user->fresh()->password);
         $this->assertDatabaseHas('users', ['id' => $user->id, 'status' => 'suspended']);
         $this->assertDatabaseCount('layouts', 4);
+        $this->assertSame('none', $layout->fresh()->configuration['audio_mode']);
         $this->assertDatabaseHas('layouts', ['id' => $layout->id, 'business_percentage' => 65]);
         $this->assertSame(['data' => 'Mi red'], SystemSetting::query()->where('key', 'network.name')->firstOrFail()->value);
         $this->assertDatabaseCount('system_settings', 6);
