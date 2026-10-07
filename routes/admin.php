@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdvertiserController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\AndroidUpdateController;
 use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\BusinessController;
 use App\Http\Controllers\Admin\CampaignController;
@@ -112,6 +113,8 @@ Route::post('alerts/{alert}/resolve', [AlertController::class, 'resolve'])->midd
 Route::get('audit', [AuditController::class, 'index'])->middleware('permission:audit.view')->name('audit.index');
 
 // System settings
+Route::get('android-updates', [AndroidUpdateController::class, 'index'])->middleware('permission:system.settings')->name('android-updates.index');
+Route::post('android-updates', [AndroidUpdateController::class, 'store'])->middleware('permission:system.settings')->name('android-updates.store');
 Route::get('settings', [SettingsController::class, 'index'])->middleware('permission:system.settings,roles.manage')->name('settings.index');
 Route::put('settings', [SettingsController::class, 'update'])->middleware('permission:system.settings')->name('settings.update');
 Route::put('settings/roles/{role}/permissions', [SettingsController::class, 'updateRolePermissions'])->middleware('permission:roles.manage')->name('settings.roles.permissions');
