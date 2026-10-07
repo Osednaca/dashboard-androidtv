@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Device\ManifestController;
 use App\Http\Controllers\Api\Device\PlaybackEventController;
 use App\Http\Controllers\Api\Device\PlaybackStateController;
 use App\Http\Controllers\Api\Device\QuickPlayController;
+use App\Http\Controllers\Api\Device\RecoveryController;
 use App\Http\Controllers\Api\Device\SettingsController;
 use App\Http\Controllers\Api\Device\SyncController;
 use Illuminate\Support\Facades\Route;
@@ -27,8 +28,12 @@ Route::post('activation/confirm', [ActivationController::class, 'confirm'])
     ->middleware('throttle:device-activation')
     ->name('api.device.activation.confirm');
 
+Route::post('activation/recovery', [RecoveryController::class, 'recover'])
+    ->middleware('throttle:device-recovery')->name('api.device.activation.recovery');
+
 // Authenticated device endpoints (bearer token issued at activation).
 Route::middleware(['device.token', 'throttle:device-api'])->group(function () {
+    Route::post('activation/recovery/enroll', [RecoveryController::class, 'enroll'])->name('api.device.activation.recovery.enroll');
     Route::post('admin/verify-pin', [AdminPinController::class, 'verify'])
         ->name('api.device.admin.verify-pin');
     Route::patch('admin/settings', [SettingsController::class, 'update'])->name('api.device.admin.settings');

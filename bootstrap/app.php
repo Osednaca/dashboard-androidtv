@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
-        $middleware->trimStrings(except: ['pin', 'pin_confirmation']);
+        $middleware->trimStrings(except: ['pin', 'pin_confirmation', 'recovery_key']);
 
         $middleware->web(append: [
             HandleInertiaRequests::class,
@@ -38,7 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['pin', 'pin_confirmation']);
+        $exceptions->dontFlash(['pin', 'pin_confirmation', 'recovery_key']);
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());
 
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) {

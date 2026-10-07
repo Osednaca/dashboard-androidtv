@@ -92,6 +92,16 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('device-activation', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
 
+        RateLimiter::for('device-recovery', function (Request $request) {
+            $key = $request->input('recovery_key');
+            $fingerprint = hash('sha256', is_string($key) ? substr($key, 0, 256) : 'invalid');
+
+            return [
+                Limit::perMinute(10)->by('recovery-ip:'.$request->ip()),
+                Limit::perMinute(5)->by('recovery-key:'.$fingerprint),
+            ];
+        });
+
         RateLimiter::for('device-api', function (Request $request) {
             $device = $request->user();
 
