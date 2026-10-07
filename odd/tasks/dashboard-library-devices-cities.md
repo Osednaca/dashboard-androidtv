@@ -22,13 +22,13 @@ Biblioteca business abre programación; biblioteca admin abre campaña nueva con
 - RDD: disabled/unmanaged, gentle-ai review mode status => off (global). No iniciar revisión ni cambiar preferencia.
 - Skills resueltas por catálogo: work-unit-commits, chained-pr, laravel-11-12-app-guidelines, vercel-react-best-practices.
 - Estrategia: ask-on-risk, resuelta por usuario a feature-branch-chain el 2026-10-07. Mantener commits locales como límites de futuras slices; no crear PR sin autorización. Forecast ~1,700 líneas authored; heurística de ~400 por tarea, no límite de implementación. Una pasada de slicing por comportamientos; si ciudad requiere una slice mayor, conservar unidad coherente y reportar extensión.
-- Conteo authored acumulado: 205 (T1). Mirror: Engram local observation #1, topic odd/dashboard-library-devices-cities/tasks (MCP stdio, cloud autosync desactivado).
+- Conteo authored acumulado: 377 (T1 205, T3 172). Mirror: Engram local observation #1, topic odd/dashboard-library-devices-cities/tasks (MCP stdio, cloud autosync desactivado).
 
 ## Tareas
 
 - [x] T1 — Menús de biblioteca visibles y accesibles en desktop, teclado y touch. Ruta delegated: library_fixes, dos bibliotecas/componentes, writer trigger 2+ archivos no triviales. Checks observados: SSR accesibilidad 1/1, suite frontend 38/38 antes retirar una prueba redundante, typecheck y build exit0 (2m51s). Interacción integrada de navegador pendiente. Commit 4930b80c5ed7aad04dd4a7859a3cbd25ed105faa, 205 líneas authored; RDD disabled/unmanaged.
-- [ ] T2 — Selección múltiple en biblioteca y navegación a formulario nuevo prellenado. Ruta delegated: library/controllers/formularios, writer y preparation triggers. Checks: permisos/aislamiento, orden, límites de listado, medios no listos; PHPUnit/frontend/typecheck/build y fixture. Commit pendiente.
-- [x] T3 — Eliminar pantallas en admin con confirmación, autorización y limpieza coherente. Ruta delegated: device_delete, UI/controller/relaciones, writer y mapping triggers. Checks: PHPUnit 4/34 y regresiones 25/201, Pint, typecheck y build aprobados; navegador local verificó opción, confirmación y cancelación conservando pantalla. Commit se registrará tras creación.
+- [x] T2 — Selección múltiple en biblioteca y navegación a formulario nuevo prellenado. Ruta delegated: library_fixes, library/controllers/formularios, writer y preparation triggers. PHPUnit regresiones 22 tests/307 assertions; frontend enfocado 14/14, suite integrada 41/41, typecheck/Pint/build final aprobados. Browser business y admin: video luego imagen prellenados en orden (18s/10s), sin guardar/publicar automáticamente. Commit se registrará tras creación.
+- [x] T3 — Eliminar pantallas en admin con confirmación, autorización y limpieza coherente. Ruta delegated: device_delete, UI/controller/relaciones, writer y mapping triggers. Checks: PHPUnit 4/34 y regresiones 25/201, Pint, typecheck y build aprobados; navegador local verificó opción, confirmación y cancelación conservando pantalla. Commit bb1fae49846ea09c8b431a37edc5567416537e86, 172 líneas authored; RDD disabled/unmanaged.
 - [ ] T4 — Ciudades administradas con varios negocios y segmentación sobre todas sus pantallas. Ruta delegated: modelo/pivot/migración/admin/campañas/resolver; mapping/writer/preparation triggers. Checks: backfill, cambios asignación, legacy, filtros activos, alcance de campañas y manifestos; PHPUnit/frontend/typecheck/build y fixture. Commit pendiente.
 
 Cada task cierra con work-unit commit Conventional Commit y evidencia observada. Parent mantiene este documento y su mirror; writers leen antes de editar. No marcar tareas completas por implementación sola.
@@ -47,7 +47,9 @@ Cada task cierra con work-unit commit Conventional Commit y evidencia observada.
 - T1: menú compartido siempre visible, nombre accesible del archivo y focus; admin previsualiza/elimina respetando permiso, business conserva acciones. Documentación de uso junto al cambio. Pint N/A (sin PHP), diff --check aprobado. Runtime: render real SSR aprobado; interacción browser integrada pendiente.
 - T3: eliminación en listado/detalle con devices.manage, revoca códigos de activación en transacción. PHPUnit borrado 4 tests/34 assertions y regresiones activación/comandos 25/201 aprobadas, Pint/diff --check aprobados. Typecheck parent exit0; build T1 incluyó UI T3, render en localhost:8138 confirmado. Browser: menú -> confirmación -> Cancelar preserva ambos dispositivos; borrado efectivo probado en PHPUnit, UI final integrada pendiente. RDD disabled/unmanaged.
 - T1 browser: menú admin visible sin hover y abre Previsualizar/Eliminar en fixture local; interfaz mobile actual. Business/desktop final pendiente.
-- Próximo paso: continuar T2 y validar T3/T4.
+- T2: selección ordenada entre páginas/filtros, límites alineados 100 business/30 admin, validación de permisos/propiedad/readiness y carga explícita fuera del límite del listado. Browser localhost:8138 confirmó ambos formularios prellenados con video/imagen, no publicación automática. Corrupción de dos labels CP1252 detectada en UI y corregida UTF-8; nuevo build final exit0 (26.11s). Warning HLS >500kB existente. Diff --check aprobado; rollback conserva menú T1.
+- Verificación final backend: suite completa 258 tests/2572 assertions, 0 errores/fallos/omitidas/warnings (48.917s), tras corregir contador de ciudades que mezclaba catálogo y sucursales. JUnit storage/logs/dashboard-corrections-full-phpunit.xml (ignorado). Pint final 12 PHP T4 pendientes aprobado. T4 regression RED 3 ciudades versus 1 observado, GREEN 33 tests/338 assertions; fallback para negocios sin catálogo conservado.
+- Próximo paso: commit T2, completar QA desktop/borrado/resumen ciudad y cerrar T4.
 
 ## Límites de rollback y slices
 
@@ -55,4 +57,4 @@ Cada task cierra con work-unit commit Conventional Commit y evidencia observada.
 - T2: revertir preselección/navegación y validación asociada, conservando menú.
 - T3: revertir operación de borrado y UI asociada.
 - T4: revertir catálogo/segmentación de ciudades; cualquier rollback de migración real requiere evaluación posterior de datos, no está autorizado aquí.
-- PR/slices: sin PR creados. Primera slice candidata T1: 555ae73..4930b80 (205 líneas authored); las restantes se registrarán al verificar cada unidad.
+- PR/slices: sin PR creados. T1: 555ae73..4930b80 (205 líneas authored). T3: 4930b80..bb1fae4 (172 líneas authored); las restantes se registrarán al verificar cada unidad.

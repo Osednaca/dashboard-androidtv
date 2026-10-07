@@ -19,11 +19,13 @@ use App\Domain\Operations\Actions\RecordAudit;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
 use App\Http\Requests\Admin\CampaignRequest;
+use App\Http\Requests\LibrarySelectionRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -65,12 +67,19 @@ class CampaignController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(LibrarySelectionRequest $request): Response
     {
         $this->authorize('create', Campaign::class);
 
+        $ids = (array) $request->validated('media_ids', []);
+        $media = MediaAsset::query()->advertising()->ready()->whereIn('type', ['image', 'video'])->whereIn('id', $ids)->get()->keyBy('id');
+        if ($media->count() !== count($ids)) {
+            throw ValidationException::withMessages(['media_ids' => 'La selección contiene archivos no disponibles. Selecciona imágenes o videos listos de la biblioteca de creatividades.']);
+        }
+
         return Inertia::render('Admin/Campaigns/Form', [
             'campaign' => null,
+            'selectedMedia' => collect($ids)->map(fn ($id) => EntityPresenter::mediaAsset($media->get($id)))->values()->all(),
             'options' => $this->wizardOptions(),
         ]);
     }

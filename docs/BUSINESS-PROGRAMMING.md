@@ -14,6 +14,10 @@ La subida de archivos es independiente de guardar la programación. **Cancelar c
 
 En **Biblioteca**, cada archivo muestra un botón de tres puntos visible también en pantallas táctiles. Se puede abrir con teclado para previsualizar; renombrar y eliminar aparecen según los permisos del usuario. En la biblioteca de creatividades del administrador, el mismo menú permite previsualizar imágenes/videos y eliminar con confirmación, tanto en cuadrícula como en lista.
 
+También puedes marcar varias imágenes/videos listos en **Biblioteca** y pulsar **Crear programación**. La selección conserva el orden de los clics y permanece al buscar, filtrar o cambiar de página; admite hasta 100 elementos. Abre una programación nueva con esos archivos, incluso si no están entre los primeros 100 del selector. Completa el nombre y horario y guarda para publicarla: abrir o cancelar el formulario no crea registros.
+
+En **Creatividades** del administrador, la selección está disponible en cuadrícula y lista y **Crear campaña** abre el formulario nuevo con hasta 30 creatividades, en el orden elegido. Aún debes completar anunciante, segmentación y horario. Abrirlo no guarda ni publica una campaña. Cada destino vuelve a comprobar permisos, propiedad y estado de los archivos; un archivo que dejó de estar disponible produce un error de selección.
+
 ## Contenido anterior
 
 - Ya no hace falta entrar a un segundo editor de playlists. Los enlaces antiguos de playlists llevan a la misma superficie de Programación.

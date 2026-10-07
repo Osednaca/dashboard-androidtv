@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import type { Paginated } from '@/Types';
 
-export function Pagination<T>({ paginator }: { paginator: Paginated<T> }) {
+export function Pagination<T>({ paginator, onNavigate }: { paginator: Paginated<T>; onNavigate?: (url: string) => void }) {
     if (paginator.last_page <= 1) return null;
 
     return (
@@ -19,7 +19,7 @@ export function Pagination<T>({ paginator }: { paginator: Paginated<T> }) {
                     asChild
                     className={!paginator.links[0]?.url ? 'pointer-events-none opacity-40' : ''}
                 >
-                    <a href={paginator.links[0]?.url ?? '#'}>
+                    <a href={paginator.links[0]?.url ?? '#'} onClick={(event) => { const url = paginator.links[0]?.url; if (onNavigate && url) { event.preventDefault(); onNavigate(url); } }}>
                         <ChevronLeft className="size-3.5" />
                         Anterior
                     </a>
@@ -37,7 +37,7 @@ export function Pagination<T>({ paginator }: { paginator: Paginated<T> }) {
                             : ''
                     }
                 >
-                    <a href={paginator.links[paginator.links.length - 1]?.url ?? '#'}>
+                    <a href={paginator.links[paginator.links.length - 1]?.url ?? '#'} onClick={(event) => { const url = paginator.links[paginator.links.length - 1]?.url; if (onNavigate && url) { event.preventDefault(); onNavigate(url); } }}>
                         Siguiente
                         <ChevronRight className="size-3.5" />
                     </a>

@@ -69,7 +69,7 @@ const weekDays = [
     { value: 7, label: 'D' },
 ];
 
-export default function CampaignForm({ campaign, options }: { campaign: FormCampaign | null; options: Options }) {
+export default function CampaignForm({ campaign, options, selectedMedia = [] }: { campaign: FormCampaign | null; options: Options; selectedMedia?: MediaEntity[] }) {
     const { can } = usePermissions();
     const [addedSources, setAddedSources] = useState<MediaEntity[]>([]);
     const creativeOptions = [...addedSources, ...options.creatives];
@@ -78,7 +78,7 @@ export default function CampaignForm({ campaign, options }: { campaign: FormCamp
         campaign ? { screens: campaign.target_screen_count, businesses: 0, locations: 0, cities: 0 } : null,
     );
 
-    const form = useForm(initialCampaignValues(campaign));
+    const form = useForm(initialCampaignValues(campaign, selectedMedia));
 
     const { data, setData, errors } = form;
 

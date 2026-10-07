@@ -9,6 +9,16 @@ const asset = (id, status = 'ready', type = 'image') => ({ id, filename: `item-$
 const row = (id, duration = 10, transition = 'fade') => ({ id, media: asset(id), duration, transition });
 const schedule = { name: 'Almuerzo', priority: 37, status: 'inactive', location: { id: 4 }, daily_start_time: null, daily_end_time: null, days_of_week: [1, 5], items: [row(11, 22), row(12, 44, 'slide_left')] };
 
+test('new library draft preserves selected order and safe durations without persisting a schedule', () => {
+    const selected = [{ ...asset(8, 'ready', 'video'), duration: 34 }, asset(2), { ...asset(5), duration: 900 }];
+    const draft = hydrateSchedule(null, undefined, selected);
+    assert.deepEqual(draft.items.map((item) => item.media_asset_id), [8, 2, 5]);
+    assert.deepEqual(draft.items.map((item) => item.duration_seconds), [34, 10, 600]);
+    assert.equal(draft.name, '');
+    assert.equal(draft.location_id, '');
+    assert.deepEqual(hydrateSchedule(schedule, undefined, selected).items.map((item) => item.media_asset_id), [11, 12]);
+});
+
 test('hydration preserves all-day, priority, location, days, ordered durations and transitions', () => {
     const draft = hydrateSchedule(schedule);
     assert.equal(draft.daily_start_time, '');

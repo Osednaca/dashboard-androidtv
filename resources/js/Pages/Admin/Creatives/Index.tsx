@@ -1,12 +1,14 @@
 import { UploadDropzone } from '@/Components/app/UploadDropzone';
 import { LiveStreamDialog } from '@/Components/app/LiveStreamDialog';
 import { usePermissions } from '@/Hooks/usePermissions';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Grid2X2, Image as ImageIcon, List, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { FilterBar } from '@/Components/app/FilterBar';
+import { LibrarySelectionBar, LibrarySelectionCheckbox } from '@/Components/app/LibrarySelection';
+import { toggleLibrarySelection } from '@/Utils/library-selection';
 import { MediaActionsMenu } from '@/Components/app/MediaActionsMenu';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
@@ -32,7 +34,13 @@ export default function CreativesIndex({
     options: { types: Option[]; statuses: Option[]; advertisers: Array<{ id: number; name: string }> };
 }) {
     const [view, setView] = useState<'grid' | 'list'>('grid');
+    const { errors } = usePage().props;
+    const selectionError = Object.entries(errors).find(([key]) => key === 'media_ids' || key.startsWith('media_ids.'))?.[1];
     const { can } = usePermissions();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const canSchedule = can('campaigns.create');
+    const toggleSelection = (id: number) => setSelectedIds((ids) => toggleLibrarySelection(ids, id, 30));
+    const navigatePage = (url: string) => router.visit(url, { preserveState: true, preserveScroll: true });
     const [uploading, setUploading] = useState(false);
     const [previewMedia, setPreviewMedia] = useState<MediaEntity | null>(null);
     const [deleting, setDeleting] = useState<MediaEntity | null>(null);
@@ -56,7 +64,10 @@ export default function CreativesIndex({
         />
     );
 
+    const selectionCheckbox = (asset: MediaEntity) => <LibrarySelectionCheckbox media={asset} selected={selectedIds.includes(asset.id)} full={selectedIds.length >= 30} onToggle={() => toggleSelection(asset.id)} />;
+
     const columns: Array<Column<MediaEntity>> = [
+        ...(canSchedule ? [{ key: 'select', header: 'Elegir', cell: selectionCheckbox }] : []),
         {
             key: 'file',
             header: 'Archivo',
@@ -150,6 +161,10 @@ export default function CreativesIndex({
                     </Select>
                 </FilterBar>
 
+                {canSchedule ? <LibrarySelectionBar count={selectedIds.length} limit={30} label="Crear campaña" onClear={() => setSelectedIds([])} onCreate={() => router.get('/admin/campaigns/create', { media_ids: selectedIds })} /> : null}
+
+                {selectionError ? <p className="mt-2 text-xs text-danger" role="alert">{selectionError}</p> : null}
+
                 <div className="mt-4">
                     {assets.data.length === 0 ? (
                         <EmptyState icon={ImageIcon} title="Sin creatividades" description="Sube imágenes JPG, PNG, WebP o videos MP4." />
@@ -158,7 +173,10 @@ export default function CreativesIndex({
                             {assets.data.map((asset) => (
                                 <Card key={asset.id} className="group">
                                     <CardContent className="space-y-2 pt-4">
-                                        <MediaThumbnail media={asset} />
+                                        <div className="relative">
+                                            <MediaThumbnail media={asset} />
+                                            {canSchedule ? <div className="absolute left-2 top-2">{selectionCheckbox(asset)}</div> : null}
+                                        </div>
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
                                                 <p className="truncate text-xs text-fg">{asset.filename}</p>
@@ -181,7 +199,7 @@ export default function CreativesIndex({
                         <DataTable columns={columns} rows={assets.data} keyExtractor={(row) => row.id} empty={<EmptyState icon={ImageIcon} title="Sin creatividades" />} />
                     )}
                 </div>
-                <Pagination paginator={assets} />
+                <Pagination paginator={assets} onNavigate={navigatePage} />
             </div>
 
             <Dialog open={!!previewMedia} onOpenChange={(open) => { if (!open) setPreviewMedia(null); }}>

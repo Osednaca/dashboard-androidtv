@@ -15,9 +15,10 @@ import { appendScheduleItems, applyScheduleMediaStatus, hasUnreadyScheduleItems,
 export type { LegacyScheduleContent } from '@/Utils/schedule-state';
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-export function ScheduleComposer({ schedule, imported, availableMedia, legacyPlaylists, transitions, locations, canUpload, onClose }: {
+export function ScheduleComposer({ schedule, imported, selectedMedia = [], availableMedia, legacyPlaylists, transitions, locations, canUpload, onClose }: {
     schedule: ContentScheduleEntity | null;
     imported?: LegacyScheduleContent;
+    selectedMedia?: MediaEntity[];
     availableMedia: MediaEntity[];
     legacyPlaylists: LegacyScheduleContent[];
     transitions: Option[];
@@ -26,11 +27,11 @@ export function ScheduleComposer({ schedule, imported, availableMedia, legacyPla
     onClose: () => void;
 }) {
     const initialItems = schedule?.items ?? imported?.items ?? [];
-    const nextKey = useRef(initialItems.length);
+    const nextKey = useRef(initialItems.length || selectedMedia.length);
     const [assets, setAssets] = useState<Record<number, MediaEntity>>(() => Object.fromEntries(
-        [...availableMedia, ...initialItems.flatMap((item) => item.media ? [item.media] : [])].map((asset) => [asset.id, asset]),
+        [...availableMedia, ...selectedMedia, ...initialItems.flatMap((item) => item.media ? [item.media] : [])].map((asset) => [asset.id, asset]),
     ));
-    const form = useForm(hydrateSchedule(schedule, imported));
+    const form = useForm(hydrateSchedule(schedule, imported, selectedMedia));
     const [pickerOpen, setPickerOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [statusError, setStatusError] = useState('');
