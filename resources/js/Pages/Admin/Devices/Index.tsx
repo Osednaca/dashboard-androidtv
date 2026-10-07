@@ -1,6 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, KeyRound, MonitorPlay, RefreshCw, Settings2 } from 'lucide-react';
+import { Eye, KeyRound, MonitorPlay, RefreshCw, Settings2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { ActionMenu } from '@/Components/app/ActionMenu';
+import { ConfirmDialog } from '@/Components/app/ConfirmDialog';
 import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { FilterBar } from '@/Components/app/FilterBar';
@@ -30,6 +32,7 @@ export default function DevicesIndex({
     options: { statuses: Option[]; businesses: BusinessOption[]; cities: string[]; appVersions: string[] };
 }) {
     const { can } = usePermissions();
+    const [deletingDevice, setDeletingDevice] = useState<DeviceEntity | null>(null);
     const applyFilter = (patch: Record<string, string>) => {
         const next: Record<string, string> = { ...filters, ...patch };
         Object.keys(next).forEach((key) => {
@@ -126,6 +129,13 @@ export default function DevicesIndex({
                                         router.post(`/admin/devices/${row.id}/revoke-token`, {}, { preserveScroll: true });
                                     }
                                 },
+                            },
+                            {
+                                label: 'Eliminar pantalla',
+                                icon: Trash2,
+                                variant: 'danger',
+                                hidden: !can('devices.manage'),
+                                onSelect: () => setDeletingDevice(row),
                             },
                         ]}
                     />
@@ -229,6 +239,16 @@ export default function DevicesIndex({
                 </div>
                 <Pagination paginator={devices} />
             </div>
+            <ConfirmDialog
+                open={deletingDevice !== null}
+                onOpenChange={(open) => { if (!open) setDeletingDevice(null); }}
+                title="Eliminar pantalla"
+                description={`¿Eliminar «${deletingDevice?.name ?? ''}»? Se borrarán sus reportes, comandos y manifiestos. Perderá su acceso y necesitará una nueva activación.`}
+                confirmLabel="Eliminar pantalla"
+                onConfirm={() => {
+                    if (deletingDevice) router.delete(`/admin/devices/${deletingDevice.id}`, { preserveScroll: true });
+                }}
+            />
         </AdminLayout>
     );
 }
