@@ -1,9 +1,10 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Eye, Image as ImageIcon, MoreVertical, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Image as ImageIcon, Plus, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/Components/app/ConfirmDialog';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { FilterBar } from '@/Components/app/FilterBar';
+import { MediaActionsMenu } from '@/Components/app/MediaActionsMenu';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { Pagination } from '@/Components/app/Pagination';
@@ -13,12 +14,6 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
 import { Input } from '@/Components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { usePermissions } from '@/Hooks/usePermissions';
@@ -118,29 +113,13 @@ export default function LibraryIndex({
                                 <Card key={asset.id} className="group overflow-hidden">
                                     <div className="relative">
                                         <MediaThumbnail media={asset} className="rounded-b-none border-0 border-b" />
-                                        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="secondary" size="icon-sm" aria-label="Acciones">
-                                                        <MoreVertical className="size-3.5" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onSelect={() => setPreviewMedia(asset)}>
-                                                        <Eye className="size-4" /> Previsualizar
-                                                    </DropdownMenuItem>
-                                                    {can('business.media.upload') ? (
-                                                        <DropdownMenuItem onSelect={() => openRename(asset)}>
-                                                            <Pencil className="size-4" /> Renombrar
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                    {can('business.media.delete') ? (
-                                                        <DropdownMenuItem variant="danger" onSelect={() => setDeleting(asset)}>
-                                                            <Trash2 className="size-4" /> Eliminar
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                        <div className="absolute right-2 top-2">
+                                            <MediaActionsMenu
+                                                filename={asset.filename}
+                                                onPreview={() => setPreviewMedia(asset)}
+                                                onRename={can('business.media.upload') ? () => openRename(asset) : undefined}
+                                                onDelete={can('business.media.delete') ? () => setDeleting(asset) : undefined}
+                                            />
                                         </div>
                                     </div>
                                     <CardContent className="space-y-1.5 pt-3">

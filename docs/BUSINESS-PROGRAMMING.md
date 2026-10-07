@@ -12,6 +12,8 @@ El negocio prepara el contenido y su horario desde **Programación**, con un sol
 
 La subida de archivos es independiente de guardar la programación. **Cancelar conserva los archivos subidos en la biblioteca, pero no publica una programación nueva.** Espera a que los archivos estén listos; los estados pendientes y errores no deben convertirse silenciosamente en contenido publicado. Si un archivo falla, corrígelo o retíralo sin perder los demás archivos.
 
+En **Biblioteca**, cada archivo muestra un botón de tres puntos visible también en pantallas táctiles. Se puede abrir con teclado para previsualizar; renombrar y eliminar aparecen según los permisos del usuario. En la biblioteca de creatividades del administrador, el mismo menú permite previsualizar imágenes/videos y eliminar con confirmación, tanto en cuadrícula como en lista.
+
 ## Contenido anterior
 
 - Ya no hace falta entrar a un segundo editor de playlists. Los enlaces antiguos de playlists llevan a la misma superficie de Programación.

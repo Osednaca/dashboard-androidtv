@@ -2,11 +2,12 @@ import { UploadDropzone } from '@/Components/app/UploadDropzone';
 import { LiveStreamDialog } from '@/Components/app/LiveStreamDialog';
 import { usePermissions } from '@/Hooks/usePermissions';
 import { Head, router } from '@inertiajs/react';
-import { Grid2X2, Image as ImageIcon, List, Plus, Trash2 } from 'lucide-react';
+import { Grid2X2, Image as ImageIcon, List, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { DataTable, type Column } from '@/Components/app/DataTable';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { FilterBar } from '@/Components/app/FilterBar';
+import { MediaActionsMenu } from '@/Components/app/MediaActionsMenu';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { Pagination } from '@/Components/app/Pagination';
@@ -33,6 +34,7 @@ export default function CreativesIndex({
     const [view, setView] = useState<'grid' | 'list'>('grid');
     const { can } = usePermissions();
     const [uploading, setUploading] = useState(false);
+    const [previewMedia, setPreviewMedia] = useState<MediaEntity | null>(null);
     const [deleting, setDeleting] = useState<MediaEntity | null>(null);
 
     const [advertiserId, setAdvertiserId] = useState('');
@@ -45,6 +47,14 @@ export default function CreativesIndex({
         });
         router.get('/admin/creatives', next, { preserveState: true, preserveScroll: true, replace: true });
     };
+
+    const assetActions = (asset: MediaEntity) => (
+        <MediaActionsMenu
+            filename={asset.filename}
+            onPreview={asset.type.value !== 'live_stream' ? () => setPreviewMedia(asset) : undefined}
+            onDelete={can('creatives.manage') ? () => setDeleting(asset) : undefined}
+        />
+    );
 
     const columns: Array<Column<MediaEntity>> = [
         {
@@ -70,11 +80,7 @@ export default function CreativesIndex({
             key: 'actions',
             header: '',
             className: 'text-right',
-            cell: (row) => (
-                <Button variant="ghost" size="icon-sm" onClick={() => setDeleting(row)} aria-label="Eliminar">
-                    <Trash2 className="size-4 text-danger" />
-                </Button>
-            ),
+            cell: (row) => assetActions(row),
         },
     ];
 
@@ -160,14 +166,7 @@ export default function CreativesIndex({
                                                     {asset.resolution ?? '—'} · {asset.human_filesize}
                                                 </p>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setDeleting(asset)}
-                                                className="opacity-0 transition-opacity group-hover:opacity-100"
-                                                aria-label="Eliminar"
-                                            >
-                                                <Trash2 className="size-3.5 text-danger" />
-                                            </button>
+                                            {assetActions(asset)}
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <StatusBadge value={asset.processing_status} />
@@ -184,6 +183,17 @@ export default function CreativesIndex({
                 </div>
                 <Pagination paginator={assets} />
             </div>
+
+            <Dialog open={!!previewMedia} onOpenChange={(open) => { if (!open) setPreviewMedia(null); }}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader><DialogTitle>{previewMedia?.filename}</DialogTitle></DialogHeader>
+                    {previewMedia?.type.value === 'video' ? (
+                        <video src={previewMedia.url} controls autoPlay className="max-h-[70vh] w-full" />
+                    ) : previewMedia ? (
+                        <img src={previewMedia.url} alt={previewMedia.filename} className="max-h-[70vh] w-full object-contain" />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={uploading} onOpenChange={(open) => { if (!uploadBusy) setUploading(open); }}>
                 <DialogContent>
