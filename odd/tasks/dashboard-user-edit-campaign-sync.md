@@ -48,3 +48,15 @@ The user explicitly requested deeper investigation after confirming current depl
 ### Symptom and narrowed evidence
 
 User confirmed that videos are affected most, the advertising zone stays empty indefinitely and manual dashboard Synchronize restores playback. The server readiness hypothesis is contradicted by current sources: ffprobe metadata processing does not transcode/change file paths, uploads compute checksum/file size, and campaign selection requires ready advertising media. Date transitions are refreshed on every sync/manifest request. Manual synchronization unconditionally rebuilds the manifest using the same install/ACK path; no special client command. Android installer withdrawal-before-video-preparation and its retry state require deeper proof. Adjacent playlist/schedule missing-dirty invalidation is a separate candidate requiring a regression and scope relevance.
+
+### Work-unit evidence
+
+- T1 web commit debc30a6c0a01c03b92bb0a0fec0c4d0b7a0b06e (`fix(admin): open the user editing dialog`); RDD disabled/unmanaged. Slice 1 starts at fc6909856db52a83e006a2708fa3cdf4bfa3494e and ends at this commit. One behavior line plus feature tracking; tests/build/browser proof above.
+
+### Demonstrated recovery gap and ownership
+
+The delegated playback mapper found a persistent source-level failure matching the empty-video symptom: ZoneSurface reports LOCAL_ASSET_CORRUPT_OR_MISSING and retries frames without preparing the local file; SyncCoordinator skips manifest installation when the server version equals the installed version. A new manual manifest version triggers installation/repair, whereas autonomous polling never repairs the unchanged version. Actual causal reproduction/tests remain required before closure. Video playback ERROR and single-item ENDED loops already retry and are not to be changed speculatively. MediaCache active leases can block replacing corruption; recovery must preserve lease/atomic-install/withdrawal semantics.
+
+T4 writer video_playback_recovery exclusively owns SyncCoordinator source, ManifestRepository, MediaCache and focused playback/cache tests. T2 writer campaign_auto_sync retains SyncRepositoryTest.kt and coordinates the unit runner, with no overlapping behavior edits. Directed cache/renderer instrumentation may use an isolated owned emulator only, after memory/build coordination. A signed production 0.1.22 artifact and release metadata will follow the verified app behavior fix, with deployment still unauthorized.
+
+- T2 server regression slice: CampaignAutomaticSyncTest passed 2 tests / 113 assertions with Bus::fake(), including two assigned devices, second edit before ACK, old/repeated ACK, retargeting, failed install ACK and unrelated-device isolation; Pint passed. This HTTP proof simulates device polling and does not verify Android rendering or MySQL concurrency. T2 remains open until the demonstrated local-cache recovery fix is checked.
