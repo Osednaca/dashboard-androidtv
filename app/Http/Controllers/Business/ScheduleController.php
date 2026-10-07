@@ -10,6 +10,7 @@ use App\Http\Controllers\Business\Concerns\AuthorizesBusiness;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
 use App\Http\Requests\Business\ScheduleRequest;
+use App\Http\Requests\LibrarySelectionRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,11 +23,21 @@ class ScheduleController extends Controller
 {
     use AuthorizesBusiness;
 
-    public function index(Request $request): Response
+    public function index(LibrarySelectionRequest $request): Response
     {
         $business = $this->business();
         $canViewContent = $request->user()->hasPermission('business.media.view')
             && $request->user()->hasPermission('business.playlists.view');
+
+        $ids = (array) $request->validated('media_ids', []);
+        if ($ids !== []) {
+            abort_unless($canViewContent && $request->user()->hasPermission('business.schedules.manage')
+                && $request->user()->hasPermission('business.playlists.manage'), 403);
+        }
+        $selectedMedia = $this->businessMediaQuery()->ready()->whereIn('type', ['image', 'video'])->whereIn('id', $ids)->get()->keyBy('id');
+        if ($selectedMedia->count() !== count($ids)) {
+            throw ValidationException::withMessages(['media_ids' => 'La selección contiene archivos no disponibles. Selecciona imágenes o videos listos de tu biblioteca.']);
+        }
 
         $schedules = $business->schedules()
             ->with($canViewContent ? ['playlist.items.mediaAsset', 'location', 'business'] : ['playlist', 'location', 'business'])
@@ -52,6 +63,7 @@ class ScheduleController extends Controller
             'availableMedia' => ! $canViewContent ? [] : $this->businessMediaQuery()->ready()
                 ->whereIn('type', ['image', 'video'])->latest()->limit(100)->get()
                 ->map(fn ($media) => EntityPresenter::mediaAsset($media))->values()->all(),
+            'selectedMedia' => collect($ids)->map(fn ($id) => EntityPresenter::mediaAsset($selectedMedia->get($id)))->values()->all(),
             'transitions' => PlaylistItem::transitionOptions(),
             'locations' => $business->locations()
                 ->orderBy('name')

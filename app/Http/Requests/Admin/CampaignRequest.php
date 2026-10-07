@@ -4,11 +4,14 @@ namespace App\Http\Requests\Admin;
 
 use App\Domain\Campaigns\Enums\CampaignTargetType;
 use App\Domain\Media\Models\MediaAsset;
+use App\Http\Requests\Admin\Concerns\ValidatesCampaignTargets;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class CampaignRequest extends FormRequest
 {
+    use ValidatesCampaignTargets;
+
     public function authorize(): bool
     {
         return $this->user()->hasPermission(
@@ -79,21 +82,7 @@ class CampaignRequest extends FormRequest
                 }
             }
 
-            foreach ($this->input('targets', []) as $index => $target) {
-                $type = CampaignTargetType::tryFrom($target['target_type'] ?? '');
-
-                if (! $type) {
-                    continue;
-                }
-
-                if ($type->isEntity() && empty($target['target_id'])) {
-                    $validator->errors()->add("targets.{$index}.target_id", 'Selecciona un objetivo válido.');
-                }
-
-                if (! $type->isEntity() && empty($target['target_value'])) {
-                    $validator->errors()->add("targets.{$index}.target_value", 'Selecciona un valor para segmentar.');
-                }
-            }
+            $this->validateTargets($validator);
         });
     }
 }

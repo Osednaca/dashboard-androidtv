@@ -9,6 +9,7 @@ import {
     Power,
     RefreshCw,
     Send,
+    Trash2,
     Wifi,
     WifiOff,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Progress } from '@/Components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import { AdminLayout } from '@/Layouts/AdminLayout';
+import { usePermissions } from '@/Hooks/usePermissions';
 import type { CommandEntity, DeviceEntity, EnumValue } from '@/Types';
 import { formatBytes, formatDateTime, formatRelative } from '@/Utils/format';
 
@@ -84,6 +86,8 @@ export default function DeviceShow({
 }) {
     const [pendingCommand, setPendingCommand] = useState<CommandType | null>(null);
     const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const { can } = usePermissions();
     usePoll(15000, { only: ['heartbeats', 'failures', 'commands', 'playback'] });
 
     const sendCommand = (type: CommandType) => {
@@ -127,6 +131,12 @@ export default function DeviceShow({
                             <Power className="size-4" />
                             {disabled ? 'Habilitar' : 'Deshabilitar'}
                         </Button>
+                        {can('devices.manage') ? (
+                            <Button variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
+                                <Trash2 className="size-4" />
+                                Eliminar
+                            </Button>
+                        ) : null}
                     </>
                 }
             />
@@ -356,6 +366,14 @@ export default function DeviceShow({
                         onSuccess: () => toast.success('Acceso revocado.'),
                     })
                 }
+            />
+            <ConfirmDialog
+                open={confirmingDelete}
+                onOpenChange={setConfirmingDelete}
+                title="Eliminar pantalla"
+                description={`¿Eliminar «${device.name}»? Se borrarán sus reportes, comandos y manifiestos. Perderá su acceso y necesitará una nueva activación.`}
+                confirmLabel="Eliminar pantalla"
+                onConfirm={() => router.delete(`/admin/devices/${device.id}`)}
             />
         </AdminLayout>
     );

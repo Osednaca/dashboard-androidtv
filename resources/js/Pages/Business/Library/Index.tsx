@@ -1,9 +1,12 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { Eye, Image as ImageIcon, MoreVertical, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Image as ImageIcon, Plus, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/Components/app/ConfirmDialog';
 import { EmptyState } from '@/Components/app/EmptyState';
 import { FilterBar } from '@/Components/app/FilterBar';
+import { LibrarySelectionBar, LibrarySelectionCheckbox } from '@/Components/app/LibrarySelection';
+import { toggleLibrarySelection } from '@/Utils/library-selection';
+import { MediaActionsMenu } from '@/Components/app/MediaActionsMenu';
 import { MediaThumbnail } from '@/Components/app/MediaThumbnail';
 import { PageHeader } from '@/Components/app/PageHeader';
 import { Pagination } from '@/Components/app/Pagination';
@@ -13,12 +16,6 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
 import { Input } from '@/Components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { usePermissions } from '@/Hooks/usePermissions';
@@ -37,7 +34,13 @@ export default function LibraryIndex({
     counts: { total: number; images: number; videos: number };
     totalSize: number;
 }) {
+    const { errors } = usePage().props;
+    const selectionError = Object.entries(errors).find(([key]) => key === 'media_ids' || key.startsWith('media_ids.'))?.[1];
     const { can } = usePermissions();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const canSchedule = can('business.schedules.manage') && can('business.playlists.manage') && can('business.playlists.view') && can('business.media.view');
+    const toggleSelection = (id: number) => setSelectedIds((ids) => toggleLibrarySelection(ids, id, 100));
+    const navigatePage = (url: string) => router.visit(url, { preserveState: true, preserveScroll: true });
     const [uploadOpen, setUploadOpen] = useState(false);
     const [uploadBusy, setUploadBusy] = useState(false);
     const [previewMedia, setPreviewMedia] = useState<MediaEntity | null>(null);
@@ -105,6 +108,10 @@ export default function LibraryIndex({
                     </Select>
                 </FilterBar>
 
+                {canSchedule ? <LibrarySelectionBar count={selectedIds.length} limit={100} label="Crear programación" onClear={() => setSelectedIds([])} onCreate={() => router.get('/business/schedule', { media_ids: selectedIds })} /> : null}
+
+                {selectionError ? <p className="mt-2 text-xs text-danger" role="alert">{selectionError}</p> : null}
+
                 <div className="mt-4">
                     {media.data.length === 0 ? (
                         <EmptyState
@@ -118,29 +125,14 @@ export default function LibraryIndex({
                                 <Card key={asset.id} className="group overflow-hidden">
                                     <div className="relative">
                                         <MediaThumbnail media={asset} className="rounded-b-none border-0 border-b" />
-                                        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="secondary" size="icon-sm" aria-label="Acciones">
-                                                        <MoreVertical className="size-3.5" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onSelect={() => setPreviewMedia(asset)}>
-                                                        <Eye className="size-4" /> Previsualizar
-                                                    </DropdownMenuItem>
-                                                    {can('business.media.upload') ? (
-                                                        <DropdownMenuItem onSelect={() => openRename(asset)}>
-                                                            <Pencil className="size-4" /> Renombrar
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                    {can('business.media.delete') ? (
-                                                        <DropdownMenuItem variant="danger" onSelect={() => setDeleting(asset)}>
-                                                            <Trash2 className="size-4" /> Eliminar
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                        {canSchedule ? <div className="absolute left-2 top-2"><LibrarySelectionCheckbox media={asset} selected={selectedIds.includes(asset.id)} full={selectedIds.length >= 100} onToggle={() => toggleSelection(asset.id)} /></div> : null}
+                                        <div className="absolute right-2 top-2">
+                                            <MediaActionsMenu
+                                                filename={asset.filename}
+                                                onPreview={() => setPreviewMedia(asset)}
+                                                onRename={can('business.media.upload') ? () => openRename(asset) : undefined}
+                                                onDelete={can('business.media.delete') ? () => setDeleting(asset) : undefined}
+                                            />
                                         </div>
                                     </div>
                                     <CardContent className="space-y-1.5 pt-3">
@@ -165,7 +157,7 @@ export default function LibraryIndex({
                         </div>
                     )}
                 </div>
-                <Pagination paginator={media} />
+                <Pagination paginator={media} onNavigate={navigatePage} />
             </div>
 
             {/* Preview */}

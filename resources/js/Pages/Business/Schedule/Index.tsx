@@ -11,11 +11,12 @@ import { usePermissions } from '@/Hooks/usePermissions';
 import { BusinessLayout } from '@/Layouts/BusinessLayout';
 import type { ContentScheduleEntity, MediaEntity, Option } from '@/Types';
 
-type Editor = { key: string; schedule: ContentScheduleEntity | null; imported?: LegacyScheduleContent };
+type Editor = { key: string; schedule: ContentScheduleEntity | null; imported?: LegacyScheduleContent; selectedMedia?: MediaEntity[] };
 
-export default function ScheduleIndex({ schedules, availableMedia, legacyPlaylists, transitions, locations }: {
+export default function ScheduleIndex({ schedules, availableMedia, legacyPlaylists, transitions, locations, selectedMedia = [] }: {
     schedules: ContentScheduleEntity[];
     availableMedia: MediaEntity[];
+    selectedMedia?: MediaEntity[];
     legacyPlaylists: LegacyScheduleContent[];
     transitions: Option[];
     locations: Array<{ id: number; name: string; city: string }>;
@@ -33,6 +34,7 @@ export default function ScheduleIndex({ schedules, availableMedia, legacyPlaylis
         const imported = legacyPlaylists.find((entry) => String(entry.id) === params.get('import'));
         if (schedule) setEditor({ key: `edit-${schedule.id}`, schedule });
         else if (imported) setEditor({ key: `import-${imported.id}`, schedule: null, imported });
+        else if (selectedMedia.length > 0) setEditor({ key: `library-${url}`, schedule: null, selectedMedia });
         // Follow URL navigation only. Fresh props after Save must not reopen the editor.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, canManage]);
@@ -43,7 +45,7 @@ export default function ScheduleIndex({ schedules, availableMedia, legacyPlaylis
             <PageHeader title="Programación" description="Elige qué mostrar, en qué orden y cuándo. Todo en un solo lugar."
                 actions={canManage && !editor ? <Button variant="primary" size="sm" onClick={() => setEditor({ key: `new-${Date.now()}`, schedule: null })}><CalendarPlus className="size-4" />Nueva programación</Button> : null} />
             {editor && canManage ? (
-                <ScheduleComposer key={editor.key} schedule={editor.schedule} imported={editor.imported} availableMedia={availableMedia} legacyPlaylists={legacyPlaylists} transitions={transitions} locations={locations} canUpload={can('business.media.upload')} onClose={() => setEditor(null)} />
+                <ScheduleComposer key={editor.key} schedule={editor.schedule} imported={editor.imported} selectedMedia={editor.selectedMedia} availableMedia={availableMedia} legacyPlaylists={legacyPlaylists} transitions={transitions} locations={locations} canUpload={can('business.media.upload')} onClose={() => setEditor(null)} />
             ) : (
                 <div className="mt-6 space-y-3">
                     {schedules.length === 0 ? <EmptyState icon={CalendarDays} title="Sin programaciones" description="Prepara tus imágenes y videos, el orden y los horarios en una sola programación." /> : schedules.map((schedule) => (

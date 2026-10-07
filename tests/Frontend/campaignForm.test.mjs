@@ -49,3 +49,13 @@ test('new campaigns retain their default dates and schedule', () => {
     assert.deepEqual(form.days_of_week, [1, 2, 3, 4, 5, 6]);
     assert.equal(form.impressions_goal, null);
 });
+
+test('library preselection initializes ordered creatives only for a new campaign and never publishes', () => {
+    const selected = [{ id: 8, duration: 40 }, { id: 2, duration: null }];
+    const form = initialCampaignValues(null, selected);
+    assert.deepEqual(form.creatives, [{ media_asset_id: 8, duration: 40, weight: 10 }, { media_asset_id: 2, duration: 10, weight: 10 }]);
+    assert.equal(form.publish, false);
+    assert.equal(form.advertiser_id, '');
+    assert.deepEqual(form.targets, []);
+    assert.deepEqual(initialCampaignValues({ creatives: [{ media_asset_id: 4, duration: 15, weight: 20 }] }, selected).creatives, [{ media_asset_id: 4, duration: 15, weight: 20 }]);
+});

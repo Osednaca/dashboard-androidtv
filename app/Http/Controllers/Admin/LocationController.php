@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Domain\Devices\Enums\DeviceStatus;
+use App\Domain\Businesses\Models\Business;
+use App\Domain\Campaigns\Models\CampaignTarget;
+use App\Domain\Locations\Actions\UpdateCityCampaigns;
 use App\Domain\Locations\Enums\LocationStatus;
-use App\Domain\Locations\Models\Location;
+use App\Domain\Locations\Models\City;
 use App\Domain\Operations\Actions\RecordAudit;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
-use App\Http\Requests\Admin\LocationRequest;
+use App\Http\Requests\Admin\CityRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,81 +20,91 @@ class LocationController extends Controller
 {
     public function index(Request $request): Response
     {
-        $this->authorize('viewAny', Location::class);
-
+        $this->authorize('locations.view');
         $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
-            'city' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'business_id' => ['nullable', 'integer'],
         ]);
 
-        $locations = Location::query()
-            ->search($request->string('search')->toString())
-            ->when($request->filled('city'), fn ($q) => $q->where('city', $request->string('city')))
+        $locations = City::query()->with('businesses:id,name')
+            ->when($request->filled('search'), fn ($q) => $q->where(fn ($q) => $q
+                ->where('name', 'like', '%'.$request->string('search').'%')
+                ->orWhere('state', 'like', '%'.$request->string('search').'%')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->when($request->filled('business_id'), fn ($q) => $q->where('business_id', $request->integer('business_id')))
-            ->with('business')
-            ->withCount([
-                'devices',
-                'devices as online_devices_count' => fn ($q) => $q->where('status', DeviceStatus::Online->value),
-            ])
-            ->orderBy('city')
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn (Location $location) => EntityPresenter::location($location));
+            ->when($request->filled('business_id'), fn ($q) => $q->whereHas('businesses', fn ($q) => $q->where('businesses.id', $request->integer('business_id'))))
+            ->orderBy('name')->paginate(15)->withQueryString()->through(fn ($city) => $this->present($city));
 
         return Inertia::render('Admin/Locations/Index', [
             'locations' => $locations,
-            'filters' => $request->only('search', 'city', 'status', 'business_id'),
+            'filters' => $request->only('search', 'status', 'business_id'),
             'options' => [
-                'statuses' => collect(LocationStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->all(),
-                'cities' => Location::query()->distinct()->orderBy('city')->pluck('city'),
-                'businesses' => DB::table('businesses')->orderBy('name')->get(['id', 'name']),
+                'statuses' => collect(LocationStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()]),
+                'businesses' => Business::query()->orderBy('name')->get(['id', 'name']),
             ],
         ]);
     }
 
-    public function store(LocationRequest $request): RedirectResponse
+    public function store(CityRequest $request, UpdateCityCampaigns $campaigns): RedirectResponse
     {
-        Location::query()->create($request->validated());
+        $campaigns->handle(function () use ($request) {
+            $city = City::query()->create($request->safe()->except('business_ids'));
+            $city->businesses()->sync($request->validated('business_ids'));
+            app(RecordAudit::class)->handle('city.created', $city);
+        }, [$request->validated('name')]);
 
-        return back()->with('success', 'Ubicación creada.');
+        return back()->with('success', 'Ciudad creada.');
     }
 
-    public function show(Location $location): Response
+    public function show(City $location): Response
     {
-        $this->authorize('view', $location);
-
-        $location->load('business')->loadCount([
-            'devices',
-            'devices as online_devices_count' => fn ($q) => $q->where('status', DeviceStatus::Online->value),
-        ]);
-
-        $devices = $location->devices()->with(['currentLayout', 'currentPlaylist'])->latest()->get()
-            ->map(fn ($device) => EntityPresenter::device($device));
+        $this->authorize('locations.view');
+        $location->load('businesses:id,name');
 
         return Inertia::render('Admin/Locations/Show', [
-            'location' => EntityPresenter::location($location),
-            'devices' => $devices,
+            'location' => $this->present($location),
+            'devices' => $location->devices()->with(['business', 'currentLayout', 'currentPlaylist'])->latest()->get()
+                ->map(fn ($device) => EntityPresenter::device($device)),
         ]);
     }
 
-    public function update(LocationRequest $request, Location $location): RedirectResponse
+    public function update(CityRequest $request, City $location, UpdateCityCampaigns $campaigns): RedirectResponse
     {
-        $location->update($request->validated());
+        $campaigns->handle(function () use ($request, $location) {
+            // Give unambiguous legacy name targets the same stable identity before a rename.
+            if ($location->name !== $request->validated('name') && City::withTrashed()->where('name', $location->name)->count() === 1) {
+                CampaignTarget::query()->where('target_type', 'city')->whereNull('target_id')
+                    ->where('target_value', $location->name)->update(['target_id' => $location->id, 'target_value' => null]);
+            }
+            $location->update($request->safe()->except('business_ids'));
+            $location->businesses()->sync($request->validated('business_ids'));
+            app(RecordAudit::class)->handle('city.updated', $location);
+        }, [$location->name, $request->validated('name')], $location->id);
 
-        app(RecordAudit::class)->handle('location.updated', $location);
-
-        return back()->with('success', 'Ubicación actualizada.');
+        return back()->with('success', 'Ciudad actualizada.');
     }
 
-    public function destroy(Location $location): RedirectResponse
+    public function destroy(City $location, UpdateCityCampaigns $campaigns): RedirectResponse
     {
-        $this->authorize('delete', $location);
+        $this->authorize('locations.manage');
+        $campaigns->handle(function () use ($location) {
+            $location->businesses()->detach();
+            $location->delete();
+            app(RecordAudit::class)->handle('city.deleted', $location);
+        }, [$location->name], $location->id);
 
-        $location->delete();
+        return redirect()->route('locations.index')->with('success', 'Ciudad eliminada.');
+    }
 
-        return back()->with('success', 'Ubicación eliminada.');
+    private function present(City $city): array
+    {
+        return [
+            'id' => $city->id, 'name' => $city->name, 'state' => $city->state,
+            'country' => $city->country, 'timezone' => $city->timezone,
+            'status' => EntityPresenter::enum($city->status),
+            'businesses' => $city->businesses->map(fn ($business) => ['id' => $business->id, 'name' => $business->name]),
+            'devices_count' => $city->devices()->count(),
+            'online_devices_count' => $city->devices()->where('status', 'online')->count(),
+        ];
     }
 }

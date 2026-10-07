@@ -4,7 +4,7 @@ export type ScheduleDraftItem = { key: number; media_asset_id: number; duration_
 export type LegacyScheduleContent = { id: number; name: string; items: PlaylistItemEntity[] };
 export type ScheduleAssets = Record<number, MediaEntity>;
 
-export function hydrateSchedule(schedule: ContentScheduleEntity | null, imported?: LegacyScheduleContent) {
+export function hydrateSchedule(schedule: ContentScheduleEntity | null, imported?: LegacyScheduleContent, selectedMedia: MediaEntity[] = []) {
     return {
         name: schedule?.name ?? imported?.name ?? '',
         location_id: schedule?.location ? String(schedule.location.id) : '',
@@ -13,9 +13,11 @@ export function hydrateSchedule(schedule: ContentScheduleEntity | null, imported
         days_of_week: [...(schedule?.days_of_week ?? [])],
         status: schedule?.status ?? 'active',
         priority: schedule?.priority ?? 0,
-        items: (schedule?.items ?? imported?.items ?? []).map((item, index): ScheduleDraftItem => ({
+        items: schedule || imported ? (schedule?.items ?? imported?.items ?? []).map((item, index): ScheduleDraftItem => ({
             key: index, media_asset_id: item.media?.id ?? 0,
             duration_seconds: item.duration, transition: item.transition,
+        })) : selectedMedia.map((media, key): ScheduleDraftItem => ({
+            key, media_asset_id: media.id, duration_seconds: Math.min(600, Math.max(3, Math.round(media.duration ?? 10))), transition: 'none',
         })),
     };
 }

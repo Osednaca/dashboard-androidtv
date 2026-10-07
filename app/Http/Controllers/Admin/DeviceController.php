@@ -6,6 +6,7 @@ use App\Domain\Businesses\Models\Business;
 use App\Domain\Devices\Actions\AssignActivation;
 use App\Domain\Devices\Actions\BuildDeviceManifest;
 use App\Domain\Devices\Actions\IssueDeviceCommand;
+use App\Domain\Devices\Enums\ActivationStatus;
 use App\Domain\Devices\Enums\DeviceCommandType;
 use App\Domain\Devices\Enums\DeviceStatus;
 use App\Domain\Devices\Models\Device;
@@ -189,7 +190,13 @@ class DeviceController extends Controller
     {
         $this->authorize('delete', $device);
 
-        $device->delete();
+        DB::transaction(function () use ($device) {
+            // Claimed codes support activation retries; revoke them before the
+            // foreign key is cleared so a deleted screen cannot recreate itself.
+            DeviceActivation::query()->where('device_id', $device->id)
+                ->update(['status' => ActivationStatus::Revoked->value]);
+            $device->delete();
+        });
 
         return redirect()->route('devices.index')->with('success', 'Pantalla eliminada.');
     }

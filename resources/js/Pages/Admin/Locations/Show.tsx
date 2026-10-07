@@ -6,14 +6,15 @@ import { PageHeader } from '@/Components/app/PageHeader';
 import { StatusBadge } from '@/Components/app/StatusBadge';
 import { Card, CardContent } from '@/Components/ui/card';
 import { AdminLayout } from '@/Layouts/AdminLayout';
-import type { DeviceEntity, LocationEntity } from '@/Types';
+import type { DeviceEntity } from '@/Types';
+import type { CityEntity } from '@/Types/city';
 import { formatRelative } from '@/Utils/format';
 
 export default function LocationShow({
     location,
     devices,
 }: {
-    location: LocationEntity;
+    location: CityEntity;
     devices: DeviceEntity[];
 }) {
     const columns: Array<Column<DeviceEntity>> = [
@@ -37,9 +38,9 @@ export default function LocationShow({
             <Head title={location.name} />
 
             <PageHeader
-                eyebrow={location.business?.name ?? 'Ubicación'}
+                eyebrow="Ubicación · ciudad"
                 title={location.name}
-                description={`${location.address ?? ''} · ${location.city}, ${location.country}`}
+                description={[location.state, location.country].filter(Boolean).join(', ')}
                 actions={<StatusBadge value={location.status} />}
             />
 
@@ -49,7 +50,7 @@ export default function LocationShow({
                         <MapPin className="size-5 text-accent" />
                         <div>
                             <p className="text-xs text-muted">Ciudad</p>
-                            <p className="text-sm text-fg">{location.city}</p>
+                            <p className="text-sm text-fg">{location.name}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -74,11 +75,20 @@ export default function LocationShow({
 
             <Card className="mt-4">
                 <CardContent className="pt-4">
+                    <p className="mb-2 text-sm font-medium text-fg">Negocios asignados ({location.businesses.length})</p>
+                    <div className="flex flex-wrap gap-3">
+                        {location.businesses.map((business) => <Link key={business.id} href={`/admin/businesses/${business.id}`} className="text-sm text-accent">{business.name}</Link>)}
+                        {location.businesses.length === 0 ? <p className="text-xs text-muted">Sin negocios asignados.</p> : null}
+                    </div>
+                </CardContent>
+            </Card>
+            <Card className="mt-4">
+                <CardContent className="pt-4">
                     <DataTable
                         columns={columns}
                         rows={devices}
                         keyExtractor={(row) => row.id}
-                        empty={<EmptyState icon={MonitorPlay} title="Sin pantallas en esta ubicación" />}
+                        empty={<EmptyState icon={MonitorPlay} title="Sin pantallas en los negocios asignados" />}
                     />
                 </CardContent>
             </Card>

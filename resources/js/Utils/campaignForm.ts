@@ -1,4 +1,4 @@
-import type { CampaignEntity } from '@/Types';
+import type { CampaignEntity, MediaEntity } from '@/Types';
 
 export interface TargetInput {
     [key: string]: string | number | boolean;
@@ -25,7 +25,7 @@ export interface FormCampaign extends Omit<CampaignEntity, 'creatives_count'> {
     targets?: Array<{ target_type: string; target_id: number | null; target_value: string | null; is_exclusion: boolean }>;
 }
 
-export function initialCampaignValues(campaign: FormCampaign | null) {
+export function initialCampaignValues(campaign: FormCampaign | null, selectedMedia: MediaEntity[] = []) {
     return {
         advertiser_id: campaign?.advertiser ? String(campaign.advertiser.id) : '',
         name: campaign?.name ?? '',
@@ -40,7 +40,8 @@ export function initialCampaignValues(campaign: FormCampaign | null) {
         impressions_goal: campaign?.impressions_goal ?? null,
         budget: campaign?.budget ?? '',
         publish: false,
-        creatives: (campaign?.creatives ?? []).map((creative) => ({ ...creative })) as CreativeInput[],
+        creatives: campaign ? (campaign.creatives ?? []).map((creative) => ({ ...creative })) as CreativeInput[]
+            : selectedMedia.map((media) => ({ media_asset_id: media.id, duration: Math.min(86400, Math.max(3, Math.round(media.duration ?? 10))), weight: 10 })) as CreativeInput[],
         targets: (campaign?.targets ?? []).map((target) => ({
             target_type: target.target_type,
             target_id: target.target_id ?? '',
