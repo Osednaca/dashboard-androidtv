@@ -9,6 +9,7 @@ import {
     MonitorPlay,
     ScrollText,
     Settings,
+    Smartphone,
     Store,
     UserCog,
     Zap,
@@ -56,6 +57,7 @@ const sections: Array<{ label: string; items: AdminItem[] }> = [
         items: [
             { label: 'Usuarios', href: '/admin/users', icon: UserCog, permissions: ['users.manage'] },
             { label: 'Auditoría', href: '/admin/audit', icon: ScrollText, permissions: ['audit.view'] },
+            { label: 'Actualizaciones Android', href: '/admin/android-updates', icon: Smartphone, permissions: ['system.settings'] },
             { label: 'Configuración', href: '/admin/settings', icon: Settings, permissions: ['system.settings', 'roles.manage'] },
         ],
     },
