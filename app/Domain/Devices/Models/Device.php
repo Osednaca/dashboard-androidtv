@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
     'app_version', 'storage_total', 'storage_free', 'current_manifest_version',
     'pending_manifest_version', 'current_layout_id', 'current_playlist_id', 'metadata',
 ])]
-#[Hidden(['device_token_hash', 'admin_pin_hash'])]
+#[Hidden(['device_token_hash', 'admin_pin_hash', 'recovery_key_hash'])]
 class Device extends Model
 {
     use HasFactory;
@@ -134,12 +134,16 @@ class Device extends Model
     /**
      * Issue a new plaintext device token, storing only its hash.
      */
-    public function issueToken(?int $ttlDays = null): string
+    public function issueToken(?int $ttlDays = null, bool $preserveRecovery = false): string
     {
+        // Other requests may have enrolled or revoked this persisted device.
+        // Refresh first so clearing fields cannot be skipped as unchanged.
+        $this->refresh();
         $plain = Str::random(64);
 
         $this->forceFill([
             'device_token_hash' => hash('sha256', $plain),
+            'recovery_key_hash' => $preserveRecovery ? $this->recovery_key_hash : null,
             'token_revoked_at' => null,
             'token_expires_at' => now()->addDays($ttlDays ?? config('signage.device.token_ttl_days')),
         ])->save();
@@ -149,8 +153,10 @@ class Device extends Model
 
     public function revokeToken(): void
     {
+        $this->refresh();
         $this->forceFill([
             'device_token_hash' => null,
+            'recovery_key_hash' => null,
             'token_revoked_at' => now(),
         ])->save();
     }

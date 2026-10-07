@@ -156,6 +156,7 @@ class DeviceActivationTest extends TestCase
             ->assertJsonPath('manifest.payload.layout.orientation', 'portrait')
             ->assertJsonPath('manifest.payload.layout.configuration.rotation', 90)
             ->assertJsonPath('manifest.payload.layout.configuration.split', 'top_bottom')
+            ->assertJsonPath('manifest.payload.layout.configuration.audio_mode', 'advertising')
             ->assertJsonPath('manifest.payload.layout.configuration.business_area', 'top')
             ->assertJsonPath('manifest.payload.layout.configuration.advertising_area', 'bottom')
             ->assertJsonPath('manifest.payload.layout.business_percentage', 70)

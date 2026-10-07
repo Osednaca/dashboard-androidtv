@@ -85,6 +85,7 @@ class ConfirmDeviceActivation
         $default = Layout::query()->where('is_default', true)->first();
         $configuration = $default?->configuration ?? [];
         $businessFirst = ! in_array($configuration['business_area'] ?? 'left', ['right', 'bottom'], true);
+        $configuration['audio_mode'] ??= 'advertising';
         $configuration['rotation'] = 90;
         $configuration['split'] = 'top_bottom';
         $configuration['business_area'] = $businessFirst ? 'top' : 'bottom';
