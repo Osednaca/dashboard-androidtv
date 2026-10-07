@@ -106,6 +106,7 @@ export default function UsersIndex({
         });
         form.clearErrors();
         setEditing(user);
+        setOpen(true);
     };
 
     const submit = () => {
