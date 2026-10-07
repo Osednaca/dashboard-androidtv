@@ -6,6 +6,7 @@ use App\Domain\Analytics\Models\BusinessDailyStat;
 use App\Domain\Businesses\Enums\BusinessCategory;
 use App\Domain\Businesses\Enums\BusinessStatus;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Locations\Models\City;
 use App\Domain\Locations\Models\Location;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Playlists\Models\Playlist;
@@ -43,6 +44,11 @@ class Business extends Model
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);
+    }
+
+    public function cities(): BelongsToMany
+    {
+        return $this->belongsToMany(City::class, 'city_business')->withTimestamps();
     }
 
     /**

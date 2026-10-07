@@ -32,7 +32,7 @@ import { cn } from '@/Utils/cn';
 interface Options {
     advertisers: Array<{ id: number; name: string; status: { value: string; label: string } }>;
     creatives: MediaEntity[];
-    cities: string[];
+    cities: Array<{ id: number; name: string; state: string; country: string }>;
     categories: Option[];
     businesses: Array<{ id: number; name: string }>;
     locations: Array<{ id: number; name: string; city: string; business: string | null }>;
@@ -50,10 +50,10 @@ const steps = [
 ];
 
 const targetTypes: Option[] = [
-    { value: 'city', label: 'Ciudad' },
+    { value: 'city', label: 'Ubicación (ciudad)' },
     { value: 'business_category', label: 'Categoría' },
     { value: 'business', label: 'Negocio' },
-    { value: 'location', label: 'Ubicación' },
+    { value: 'location', label: 'Sucursal' },
     { value: 'device', label: 'Pantalla' },
     { value: 'state', label: 'Departamento' },
     { value: 'country', label: 'País' },
@@ -475,7 +475,7 @@ function TargetBuilder({
     const optionsFor = (type: string) => {
         switch (type) {
             case 'city':
-                return options.cities.map((city) => ({ value: city, label: city }));
+                return options.cities.map((city) => ({ value: String(city.id), label: [city.name, city.state, city.country].filter(Boolean).join(' · ') }));
             case 'business_category':
                 return options.categories.map((category) => ({ value: category.value, label: category.label }));
             case 'business':
@@ -489,7 +489,7 @@ function TargetBuilder({
         }
     };
 
-    const isEntity = ['business', 'location', 'device'].includes(draft.target_type);
+    const isEntity = ['city', 'business', 'location', 'device'].includes(draft.target_type);
     const draftOptions = optionsFor(draft.target_type);
 
     const add = () => {
@@ -522,7 +522,7 @@ function TargetBuilder({
                     </FormField>
 
                     <FormField label="Valor" className="sm:col-span-2">
-                        {draftOptions.length > 0 ? (
+                        {isEntity || draftOptions.length > 0 ? (
                             <Select
                                 value={isEntity ? String(draft.target_id) : draft.target_value}
                                 onValueChange={(value) =>
@@ -561,7 +561,7 @@ function TargetBuilder({
                             />
                             Excluir
                         </label>
-                        <Button variant="primary" onClick={add}>
+                        <Button variant="primary" onClick={add} disabled={isEntity && draftOptions.length === 0}>
                             <Target className="size-4" />
                             Añadir
                         </Button>
@@ -587,7 +587,7 @@ function TargetBuilder({
                             >
                                 {target.is_exclusion ? 'Excluye ' : ''}
                                 {targetTypes.find((type) => type.value === target.target_type)?.label}
-                                {target.target_id ? ` #${target.target_id}` : ''}
+                                {target.target_id ? `: ${optionsFor(target.target_type).find((option) => option.value === String(target.target_id))?.label ?? `#${target.target_id}`}` : ''}
                                 {target.target_value ? `: ${target.target_value}` : ''}
                                 <button type="button" onClick={() => onRemove(index)} aria-label="Quitar">
                                     <X className="size-3" />

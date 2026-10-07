@@ -8,6 +8,7 @@ use App\Domain\Campaigns\Enums\CampaignTargetType;
 use App\Domain\Campaigns\Models\Campaign;
 use App\Domain\Campaigns\Models\CampaignTarget;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Locations\Models\City;
 use App\Domain\Locations\Models\Location;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -21,7 +22,7 @@ class ResolveCampaignTargets
      */
     public function devicesFor(Campaign $campaign): Builder
     {
-        $targets = $campaign->targets()->get();
+        $targets = $campaign->getKey() === null && $campaign->relationLoaded('targets') ? $campaign->targets : $campaign->targets()->get();
 
         if ($targets->isEmpty()) {
             return Device::query()->whereRaw('1 = 0');
@@ -58,10 +59,11 @@ class ResolveCampaignTargets
             'screens' => (clone $query)->count(),
             'businesses' => (clone $query)->distinct()->count('business_id'),
             'locations' => (clone $query)->whereNotNull('location_id')->distinct()->count('location_id'),
-            'cities' => (clone $query)
-                ->join('locations', 'locations.id', '=', 'devices.location_id')
-                ->distinct()
-                ->count('locations.city'),
+            'cities' => City::query()->where('status', 'active')->whereHas('businesses', fn ($q) => $q
+                ->whereIn('businesses.id', (clone $query)->select('devices.business_id')))->count()
+                + (clone $query)->join('locations', 'locations.id', '=', 'devices.location_id')
+                    ->whereDoesntHave('business.cities', fn ($q) => $q->where('cities.status', 'active'))
+                    ->whereNotIn('locations.city', City::withTrashed()->select('name'))->distinct()->count('locations.city'),
         ];
     }
 
@@ -87,9 +89,7 @@ class ResolveCampaignTargets
             CampaignTargetType::BusinessCategory => $inclusive
                 ? $query->orWhereIn('devices.business_id', Business::query()->whereIn('category', $values)->select('id'))
                 : $query->whereNotIn('devices.business_id', Business::query()->whereIn('category', $values)->select('id')),
-            CampaignTargetType::City => $inclusive
-                ? $query->orWhereIn('devices.location_id', Location::query()->whereIn('city', $values)->select('id'))
-                : $query->whereNotIn('devices.location_id', Location::query()->whereIn('city', $values)->select('id')),
+            CampaignTargetType::City => $this->applyCityCondition($query, $targets, $inclusive),
             CampaignTargetType::State => $inclusive
                 ? $query->orWhereIn('devices.location_id', Location::query()->whereIn('state', $values)->select('id'))
                 : $query->whereNotIn('devices.location_id', Location::query()->whereIn('state', $values)->select('id')),
@@ -97,6 +97,24 @@ class ResolveCampaignTargets
                 ? $query->orWhereIn('devices.location_id', Location::query()->whereIn('country', $values)->select('id'))
                 : $query->whereNotIn('devices.location_id', Location::query()->whereIn('country', $values)->select('id')),
         };
+    }
+
+    protected function applyCityCondition(Builder $query, Collection $targets, bool $inclusive): void
+    {
+        $ids = $targets->pluck('target_id')->filter()->values();
+        $names = $targets->filter(fn ($target) => ! $target->target_id)->pluck('target_value')->filter()->values();
+        $catalogue = City::query()->where('status', 'active')->where(fn ($q) => $q->whereIn('id', $ids)->orWhereIn('name', $names));
+        $businessIds = Business::query()->whereHas('cities', fn ($q) => $q->whereIn('cities.id', $catalogue->select('id')))->select('id');
+        // A disabled/deleted or unassigned catalogue city must never fall back to branches.
+        $legacy = Location::query()->whereIn('city', $names)
+            ->whereNotIn('city', City::withTrashed()->select('name'))->select('id');
+        if ($inclusive) {
+            $query->orWhere(fn ($q) => $q->whereIn('devices.business_id', $businessIds)->orWhereIn('devices.location_id', $legacy));
+        } else {
+            // Null branch IDs are eligible and must survive an unrelated exclusion.
+            $query->whereNotIn('devices.business_id', $businessIds)
+                ->where(fn ($q) => $q->whereNull('devices.location_id')->orWhereNotIn('devices.location_id', $legacy));
+        }
     }
 
     public function recommendedStatus(Campaign $campaign): CampaignStatus

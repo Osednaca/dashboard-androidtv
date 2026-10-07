@@ -16,7 +16,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/Components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { AdminLayout } from '@/Layouts/AdminLayout';
-import type { LocationEntity, Option, Paginated } from '@/Types';
+import type { Option, Paginated } from '@/Types';
+import type { CityEntity } from '@/Types/city';
 
 interface OptionBusiness {
     id: number;
@@ -28,21 +29,19 @@ export default function LocationsIndex({
     filters,
     options,
 }: {
-    locations: Paginated<LocationEntity>;
-    filters: { search?: string; city?: string; status?: string; business_id?: string };
-    options: { statuses: Option[]; cities: string[]; businesses: OptionBusiness[] };
+    locations: Paginated<CityEntity>;
+    filters: { search?: string; status?: string; business_id?: string };
+    options: { statuses: Option[]; businesses: OptionBusiness[] };
 }) {
     const [open, setOpen] = useState(false);
-    const [editing, setEditing] = useState<LocationEntity | null>(null);
-    const [deleting, setDeleting] = useState<LocationEntity | null>(null);
+    const [editing, setEditing] = useState<CityEntity | null>(null);
+    const [deleting, setDeleting] = useState<CityEntity | null>(null);
 
     const form = useForm({
-        business_id: '',
+        business_ids: [] as number[],
         name: '',
-        city: '',
         state: '',
         country: 'Colombia',
-        address: '',
         timezone: 'America/Bogota',
         status: 'active',
     });
@@ -62,19 +61,18 @@ export default function LocationsIndex({
         setOpen(true);
     };
 
-    const openEdit = (location: LocationEntity) => {
+    const openEdit = (location: CityEntity) => {
         form.setData({
-            business_id: String(location.business?.id ?? ''),
+            business_ids: location.businesses.map((business) => business.id),
             name: location.name,
-            city: location.city,
             state: location.state ?? '',
             country: location.country,
-            address: location.address ?? '',
             timezone: location.timezone,
             status: location.status.value,
         });
         form.clearErrors();
         setEditing(location);
+        setOpen(true);
     };
 
     const submit = () => {
@@ -92,21 +90,20 @@ export default function LocationsIndex({
         }
     };
 
-    const columns: Array<Column<LocationEntity>> = [
+    const columns: Array<Column<CityEntity>> = [
         {
             key: 'name',
-            header: 'Ubicación',
+            header: 'Ciudad',
             cell: (row) => (
                 <div className="min-w-0">
                     <Link href={`/admin/locations/${row.id}`} className="block truncate font-medium text-fg hover:text-accent">
                         {row.name}
                     </Link>
-                    <span className="block truncate text-xs text-faint">{row.business?.name}</span>
+                    <span className="block truncate text-xs text-faint">{row.businesses.map((business) => business.name).join(', ') || 'Sin negocios'}</span>
                 </div>
             ),
         },
-        { key: 'city', header: 'Ciudad', cell: (row) => <span className="text-muted">{row.city}</span> },
-        { key: 'address', header: 'Dirección', cell: (row) => <span className="truncate text-muted">{row.address ?? '—'}</span> },
+        { key: 'region', header: 'Región', cell: (row) => <span className="text-muted">{[row.state, row.country].filter(Boolean).join(', ')}</span> },
         {
             key: 'screens',
             header: 'Pantallas',
@@ -139,34 +136,21 @@ export default function LocationsIndex({
 
     return (
         <AdminLayout>
-            <Head title="Ubicaciones" />
+            <Head title="Ubicaciones · ciudades" />
 
             <PageHeader
-                title="Ubicaciones"
-                description="Puntos físicos donde operan las pantallas."
+                title="Ubicaciones · ciudades"
+                description="Ciudades que agrupan negocios para segmentar campañas."
                 actions={
                     <Button variant="primary" size="sm" onClick={openCreate}>
                         <Plus className="size-4" />
-                        Nueva ubicación
+                        Nueva ciudad
                     </Button>
                 }
             />
 
             <div className="mt-6 rounded-card border border-line bg-card p-4">
-                <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar por nombre, ciudad o dirección…">
-                    <Select value={filters.city ?? 'all'} onValueChange={(value) => applyFilter({ city: value === 'all' ? '' : value })}>
-                        <SelectTrigger className="w-full sm:w-40">
-                            <SelectValue placeholder="Ciudad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todas las ciudades</SelectItem>
-                            {options.cities.map((city) => (
-                                <SelectItem key={city} value={city}>
-                                    {city}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <FilterBar search={filters.search} onSearch={(value) => applyFilter({ search: value })} searchPlaceholder="Buscar por ciudad o departamento…">
                     <Select value={filters.business_id ?? 'all'} onValueChange={(value) => applyFilter({ business_id: value === 'all' ? '' : value })}>
                         <SelectTrigger className="w-full sm:w-48">
                             <SelectValue placeholder="Negocio" />
@@ -187,7 +171,7 @@ export default function LocationsIndex({
                         columns={columns}
                         rows={locations.data}
                         keyExtractor={(row) => row.id}
-                        empty={<EmptyState icon={MapPin} title="Sin ubicaciones" />}
+                        empty={<EmptyState icon={MapPin} title="Sin ciudades" />}
                     />
                 </div>
                 <Pagination paginator={locations} />
@@ -196,37 +180,32 @@ export default function LocationsIndex({
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editing ? 'Editar ubicación' : 'Nueva ubicación'}</DialogTitle>
+                        <DialogTitle>{editing ? 'Editar ciudad' : 'Nueva ciudad'}</DialogTitle>
                     </DialogHeader>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FormField label="Negocio" error={form.errors.business_id} className="sm:col-span-2">
-                            <Select value={form.data.business_id || undefined} onValueChange={(value) => form.setData('business_id', value)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecciona un negocio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {options.businesses.map((business) => (
-                                        <SelectItem key={business.id} value={String(business.id)}>
-                                            {business.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                        <FormField label="Negocios asignados" error={form.errors.business_ids} className="sm:col-span-2">
+                            <p className="mb-2 text-xs text-muted">La campaña se reproducirá en todas las pantallas de los negocios seleccionados.</p>
+                            <div className="max-h-48 space-y-2 overflow-y-auto rounded-control border border-line p-3">
+                                {options.businesses.map((business) => (
+                                    <label key={business.id} className="flex items-center gap-2 text-sm text-fg">
+                                        <input type="checkbox" checked={form.data.business_ids.includes(business.id)}
+                                            onChange={(event) => form.setData('business_ids', event.target.checked
+                                                ? [...form.data.business_ids, business.id]
+                                                : form.data.business_ids.filter((id) => id !== business.id))} />
+                                        {business.name}
+                                    </label>
+                                ))}
+                                {options.businesses.length === 0 ? <p className="text-xs text-muted">Crea un negocio antes de asignarlo.</p> : null}
+                            </div>
                         </FormField>
-                        <FormField label="Nombre" error={form.errors.name}>
+                        <FormField label="Ciudad" error={form.errors.name}>
                             <Input value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} />
-                        </FormField>
-                        <FormField label="Ciudad" error={form.errors.city}>
-                            <Input value={form.data.city} onChange={(e) => form.setData('city', e.target.value)} placeholder="Bogotá" />
                         </FormField>
                         <FormField label="Departamento" error={form.errors.state}>
                             <Input value={form.data.state} onChange={(e) => form.setData('state', e.target.value)} />
                         </FormField>
                         <FormField label="País" error={form.errors.country}>
                             <Input value={form.data.country} onChange={(e) => form.setData('country', e.target.value)} />
-                        </FormField>
-                        <FormField label="Dirección" error={form.errors.address} className="sm:col-span-2">
-                            <Input value={form.data.address} onChange={(e) => form.setData('address', e.target.value)} />
                         </FormField>
                         <FormField label="Estado" error={form.errors.status}>
                             <Select value={form.data.status} onValueChange={(value) => form.setData('status', value)}>
@@ -251,7 +230,7 @@ export default function LocationsIndex({
                             Cancelar
                         </Button>
                         <Button variant="primary" onClick={submit} disabled={form.processing}>
-                            {editing ? 'Guardar cambios' : 'Crear ubicación'}
+                            {editing ? 'Guardar cambios' : 'Crear ciudad'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -261,12 +240,12 @@ export default function LocationsIndex({
                 open={!!deleting}
                 onOpenChange={(value) => (!value ? setDeleting(null) : null)}
                 title={`Eliminar ${deleting?.name ?? ''}`}
-                description="Las pantallas de esta ubicación quedarán sin asignar."
-                confirmLabel="Eliminar ubicación"
+                description="Se quitará esta ciudad de la segmentación. Los negocios, sucursales y pantallas se conservarán."
+                confirmLabel="Eliminar ciudad"
                 onConfirm={() => {
                     if (!deleting) return;
                     router.delete(`/admin/locations/${deleting.id}`, {
-                        onSuccess: () => toast.success('Ubicación eliminada.'),
+                        onSuccess: () => toast.success('Ciudad eliminada.'),
                     });
                 }}
             />

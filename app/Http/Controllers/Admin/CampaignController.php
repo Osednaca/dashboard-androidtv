@@ -13,12 +13,14 @@ use App\Domain\Campaigns\Enums\CampaignTargetType;
 use App\Domain\Campaigns\Models\Campaign;
 use App\Domain\Campaigns\Models\CampaignTarget;
 use App\Domain\Devices\Models\Device;
+use App\Domain\Locations\Models\City;
 use App\Domain\Locations\Models\Location;
 use App\Domain\Media\Models\MediaAsset;
 use App\Domain\Operations\Actions\RecordAudit;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\EntityPresenter;
 use App\Http\Requests\Admin\CampaignRequest;
+use App\Http\Requests\Admin\PreviewCampaignTargetsRequest;
 use App\Http\Requests\LibrarySelectionRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -50,7 +52,9 @@ class CampaignController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('advertiser_id'), fn ($q) => $q->where('advertiser_id', $request->integer('advertiser_id')))
             ->when($request->filled('category'), fn ($q) => $q->whereHas('targets', fn ($qq) => $qq->where('target_type', 'business_category')->where('target_value', $request->string('category'))))
-            ->when($request->filled('city'), fn ($q) => $q->whereHas('targets', fn ($qq) => $qq->where('target_type', 'city')->where('target_value', $request->string('city'))))
+            ->when($request->filled('city'), fn ($q) => $q->whereHas('targets', fn ($qq) => $qq->where('target_type', 'city')->where(fn ($q) => $q
+                ->where('target_value', $request->string('city'))
+                ->orWhereIn('target_id', City::query()->where('name', $request->string('city'))->select('id')))))
             ->with('advertiser')
             ->withCount('creatives')
             ->withSum(['dailyStats as playbacks_count' => fn ($q) => $q->where('stat_date', '>=', $from)], 'playbacks_count')
@@ -294,17 +298,11 @@ class CampaignController extends Controller
         return redirect()->route('campaigns.index')->with('success', 'Campaña eliminada.');
     }
 
-    public function previewTargets(Request $request, ResolveCampaignTargets $targets): JsonResponse
+    public function previewTargets(PreviewCampaignTargetsRequest $request, ResolveCampaignTargets $targets): JsonResponse
     {
         $this->authorize('viewAny', Campaign::class);
 
-        $payload = $request->validate([
-            'targets' => ['array'],
-            'targets.*.target_type' => ['required', 'string'],
-            'targets.*.target_id' => ['nullable', 'integer'],
-            'targets.*.target_value' => ['nullable', 'string'],
-            'targets.*.is_exclusion' => ['boolean'],
-        ]);
+        $payload = $request->validated();
 
         $campaign = new Campaign;
         $campaign->exists = true;
@@ -366,7 +364,7 @@ class CampaignController extends Controller
         return [
             'statuses' => collect(CampaignStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()])->all(),
             'advertisers' => Advertiser::query()->orderBy('name')->get(['id', 'name']),
-            'cities' => Location::query()->distinct()->orderBy('city')->pluck('city'),
+            'cities' => City::query()->orderBy('name')->distinct()->pluck('name'),
             'categories' => BusinessCategory::options(),
         ];
     }
@@ -383,7 +381,7 @@ class CampaignController extends Controller
                 'status' => EntityPresenter::enum($a->status),
             ]),
             'creatives' => MediaAsset::query()->advertising()->ready()->latest()->get()->map(fn ($asset) => EntityPresenter::mediaAsset($asset)),
-            'cities' => Location::query()->distinct()->orderBy('city')->pluck('city'),
+            'cities' => City::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'state', 'country']),
             'categories' => BusinessCategory::options(),
             'businesses' => Business::query()->orderBy('name')->get(['id', 'name']),
             'locations' => Location::query()->with('business:id,name')->orderBy('name')->get(['id', 'name', 'city', 'business_id'])->map(fn ($l) => [
@@ -401,7 +399,7 @@ class CampaignController extends Controller
                 'screens' => Device::query()->count(),
                 'businesses' => Business::query()->count(),
                 'locations' => Location::query()->count(),
-                'cities' => Location::query()->distinct()->count('city'),
+                'cities' => City::query()->where('status', 'active')->count(),
             ],
         ];
     }
