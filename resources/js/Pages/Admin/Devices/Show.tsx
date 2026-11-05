@@ -6,7 +6,6 @@ import {
     KeyRound,
     MonitorPlay,
     PlayCircle,
-    Power,
     RefreshCw,
     Send,
     Trash2,
@@ -106,8 +105,6 @@ export default function DeviceShow({
         );
     };
 
-    const disabled = device.status.value === 'disabled';
-
     return (
         <AdminLayout>
             <Head title={device.name} />
@@ -122,14 +119,6 @@ export default function DeviceShow({
                         <Button variant="secondary" size="sm" onClick={() => router.post(`/admin/devices/${device.id}/sync`, {}, { preserveScroll: true })}>
                             <RefreshCw className="size-4" />
                             Sincronizar
-                        </Button>
-                        <Button
-                            variant={disabled ? 'success' : 'outline'}
-                            size="sm"
-                            onClick={() => router.post(`/admin/devices/${device.id}/toggle-status`, {}, { preserveScroll: true })}
-                        >
-                            <Power className="size-4" />
-                            {disabled ? 'Habilitar' : 'Deshabilitar'}
                         </Button>
                         {can('devices.manage') ? (
                             <Button variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
